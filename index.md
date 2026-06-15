@@ -3,7 +3,7 @@ Two-wheeled robot controlled entirely by hand gestures using Bluetooth. An MPU60
 
 | **Engineer** | **School** | **Area of Interest** | **Grade** |
 |:Adhrit:|:Fallon Middle School:|:Bio Enigneer:|:Incoming 9th Grader:|
-| FirstName LastInitialOnly | School Name | Electrical Engineering | Incoming Senior
+
 
 **Replace the BlueStamp logo below with an image of yourself and your completed project. Follow the guide [here](https://tomcam.github.io/least-github-pages/adding-images-github-pages-site.html) if you need help.**
 

@@ -1,9 +1,9 @@
 # Gesture Controlled Robot 
 Two-wheeled robot controlled entirely by hand gestures using Bluetooth. An MPU6050 on the controller detects hand tilt and sends directional commands wirelessly via HC-05 Bluetooth modules to the robot. The biggest challenge was calibrating the gyroscope thresholds and getting the two Bluetooth modules to pair correctly."
 
-| **Engineer** | **School** | **Area of Interest** | **Grade** |
-|:Adhrit:|:Fallon Middle School:|:Bio Enigneer:|:Incoming 9th Grader:|
-
+Engineer | School | Area of Interest | Grade
+:--: | :--: | :--: | :--:
+Adhrit M | Fallon Middle School | Bioengineering | Incoming 9th Grader
 
 **Replace the BlueStamp logo below with an image of yourself and your completed project. Follow the guide [here](https://tomcam.github.io/least-github-pages/adding-images-github-pages-site.html) if you need help.**
 

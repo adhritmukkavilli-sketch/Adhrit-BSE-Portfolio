@@ -1,5 +1,5 @@
-# Project Name Here
-Replace this text with a brief description (2-3 sentences) of your project. This description should draw the reader in and make them interested in what you've built. You can include what the biggest challenges, takeaways, and triumphs from completing the project were. As you complete your portfolio, remember your audience is less familiar than you are with all that your project entails!
+# Gesture Controlled Robot 
+Two-wheeled robot controlled entirely by hand gestures using Bluetooth. An MPU6050 on the controller detects hand tilt and sends directional commands wirelessly via HC-05 Bluetooth modules to the robot. The biggest challenge was calibrating the gyroscope thresholds and getting the two Bluetooth modules to pair correctly."
 
 You should comment out all portions of your portfolio that you have not completed yet, as well as any instructions:
 ```HTML 
@@ -84,7 +84,8 @@ Don't forget to place the link of where to buy each component inside the quotati
 
 # Other Resources/Examples
 One of the best parts about Github is that you can view how other people set up their own work. Here are some past BSE portfolios that are awesome examples. You can view how they set up their portfolio, and you can view their index.md files to understand how they implemented different portfolio components.
-- [Example 1](https://trashytuber.github.io/YimingJiaBlueStamp/)
+- [Example 1](https://trashytuber.github.io/Yimin
+- gJiaBlueStamp/)
 - [Example 2](https://sviatil0.github.io/Sviatoslav_BSE/)
 - [Example 3](https://arneshkumar.github.io/arneshbluestamp/)
 

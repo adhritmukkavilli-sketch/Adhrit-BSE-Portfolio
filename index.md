@@ -53,19 +53,89 @@ Here's where you'll put images of your schematics. [Tinkercad](https://www.tinke
 # Code
 Here's where you'll put your code. The syntax below places it into a block of code. Follow the guide [here]([url](https://www.markdownguide.org/extended-syntax/)) to learn how to customize it to your project needs. 
 
-```c++
+Glove code:
+
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include <MPU6050.h>
+
+SoftwareSerial BTSerial(2, 3);
+MPU6050 mpu;
+
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
-  Serial.println("Hello World!");
+  BTSerial.begin(9600);
+  Wire.begin();
+  mpu.initialize();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  int16_t ax, ay, az, gx, gy, gz;
+  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
+  char cmd;
+  if (ay > 5000) cmd = 'F';
+  else if (ay < -8000) cmd = 'B';
+  else if (ax < 9000) cmd = 'L';
+  else if (ax > 14000) cmd = 'R';
+  else cmd = 'S';
+
+  Serial.println(cmd);
+  BTSerial.print(cmd);
+  delay(100);
 }
-```
 
+Robot Code
+
+#define IN1 5
+#define IN2 6
+#define IN3 10
+#define IN4 11
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  stopMotors();
+}
+
+void loop() {
+  if (Serial.available()) {
+    char cmd = Serial.read();
+    if (cmd == 'R') stopMotors();
+    else if (cmd == 'F') turnRight();
+    else if (cmd == 'B') turnLeft();
+    else if (cmd == 'L') forward();
+    else if (cmd == 'S') backward();
+  }
+}
+
+void forward() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+}
+
+void backward() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
+}
+
+void turnLeft() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+}
+
+void turnRight() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
+}
+
+void stopMotors() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
+}
 # Bill of Materials
 Here's where you'll list the parts in your project. To add more rows, just copy and paste the example rows below.
 Don't forget to place the link of where to buy each component inside the quotation marks in the corresponding row after href =. Follow the guide [here]([url](https://www.markdownguide.org/extended-syntax/)) to learn how to customize this to your project needs. 

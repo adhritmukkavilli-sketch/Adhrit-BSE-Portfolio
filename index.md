@@ -37,15 +37,31 @@ For your second milestone, explain what you've worked on since your previous mil
 
 # First Milestone
 
-**Don't forget to replace the text below with the embedding for your milestone video. Go to Youtube, click Share -> Embed, and copy and paste the code to replace what's below.**
+ https://youtu.be/FbHnvSsPRkI
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/CaCazFBhYKs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+First Milestone
+- I Finished base progect. (Wiring + Code)
 
-For your first milestone, describe what your project is and how you plan to build it. You can include:
-- An explanation about the different components of your project and how they will all integrate together
-- Technical progress you've made so far
-- Challenges you're facing and solving in your future milestones
-- What your plan is to complete your project
+How It Works 
+- You tilt your hand. 
+- the MPU6050 detects that and sends the tilt coordinates over to the hand Arduino
+- Hand Arduino reads the tilt values and sends commands over Bluetooth via HC-05 to the robots arduino 
+- Robot Arduino receives the commands and controls the L298N motor driver
+- L298N drives the two DC motors according to the gesture you chose
+
+
+Hardest Parts
+- Getting the two HC-05 modules to pair
+- MPU6050 not being detected (breadboard connection issue)
+- Calibrating the tilt thresholds for each direction
+- Motor directions being reversed
+
+Plans after First Milestone
+- Connecting a battery directly to the motor driver for more speed
+- Adding a screen that displays the way its moving or like a message
+- Adding LED lights that change color in different directions
+- Adding Sound effects with DFPlayer Mini
+
 
 # Schematics 
 Here's where you'll put images of your schematics. [Tinkercad](https://www.tinkercad.com/blog/official-guide-to-tinkercad-circuits) and [Fritzing](https://fritzing.org/learning/) are both great resoruces to create professional schematic diagrams, though BSE recommends Tinkercad becuase it can be done easily and for free in the browser. 

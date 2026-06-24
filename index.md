@@ -204,5 +204,8 @@ void stopMotors() {
 | 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $5.00 | <a href="https://www.amazon.com/SanDisk-microSD-High-Capacity-microSDHC/dp/B00488G6P8"> Link </a> |
 | L298N Mini Motor Driver | Controls the two DC motors | $3.00 | <a href="https://www.amazon.com/WWZMDiB-Channel-Bridge-Electric-Projects/dp/B0BD53Q7TT"> Link </a> |
 | Speaker 8 Ohm | Outputs sound from DFPlayer Mini | $2.00 | <a href="https://www.amazon.com/MakerHawk-Full-Range-Advertising-Separating-JST-PH2-0mm-2/dp/B07FTB281F"> Link </a> |
+
+## Other Resources/Examples
+
 - [Hand Gesture Control Robot via Bluetooth - Hackster.io](https://www.hackster.io/embeddedlab786/hand-gesture-control-robot-via-bluetooth-94b13d)
 - [Hand Gesture Controlled Robot - YouTube](https://www.youtube.com/watch?v=BXXAcFOTnBo)

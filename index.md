@@ -190,7 +190,6 @@ void stopMotors() {
 | Arduino Uno Clone x2 | Main controllers for robot and glove | $14.98 | <a href="https://www.amazon.com/ELEGOO-Board-ATmega328P-ATMEGA16U2-Compliant/dp/B01EWOE0UU"> Link </a> |
 | Electronics Kit | Jumper wires, resistors, components | $14.00 | <a href="https://www.amazon.com/Smraza-Electronics-Potentiometer-tie-Points-Breadboard/dp/B0B62RL725"> Link </a> |
 | Breadboard Kit | For prototyping connections | $8.79 | <a href="https://www.amazon.com/Breadboards-Solderless-Breadboard-Distribution-Connecting/dp/B07DL13RZH"> Link </a> |
-| Arduino Nano 33 BLE Sense | Glove controller | $39.70 | <a href="https://www.amazon.com/Arduino-Nano-Sense-headers-ABX00070/dp/B0BQHZ88WD"> Link </a> |
 | Micro USB Cable | For programming Arduinos | $5.00 | <a href="https://www.amazon.com/Charging-Transfer-Android-Trustable-MYFON/dp/B098DW7485"> Link </a> |
 | MPU6050 Accelerometer | Detects hand tilt gestures | $9.00 | <a href="https://www.amazon.com/dp/B0D2TJVMNY"> Link </a> |
 | HC-05 Bluetooth x2 | Wireless communication between glove and robot | $9.00 | <a href="https://www.amazon.com/DSD-TECH-HC-05-Pass-through-Communication/dp/B01G9KSAF6"> Link </a> |
@@ -198,12 +197,12 @@ void stopMotors() {
 | 9V Batteries | Powers robot and glove | $8.69 | <a href="https://www.amazon.com/Amazon-Basics-Performance-All-Purpose-Batteries/dp/B00MH4QM1S"> Link </a> |
 | Velcro Tape | Mounts components to glove and robot | $8.00 | <a href="https://www.amazon.com/Art3d-Sticky-Double-Sided-Command-Adhesive/dp/B0B58FGF8H"> Link </a> |
 | DMM | Multimeter for debugging | $9.99 | <a href="https://www.amazon.com/dp/B0CXM242J1"> Link </a> |
-| LCD Screen 16x2 with I2C | Displays current direction on robot | $4.00 | <a href="https://www.amazon.com/GeeekPi-Character-Backlight-Raspberry-Electrical/dp/B07S7PJYM6"> Link </a> |
-| DFPlayer Mini | Plays sound effects for each movement | $3.00 | <a href="https://www.amazon.com/DFPlayer-A-Mini-MP3-Player/dp/B089D5NLW1"> Link </a> |
-| Jumper Wires | Connects all components together | $3.00 | <a href="https://www.amazon.com/ELEGOO-Solderless-Flexible-Breadboard-Compatible/dp/B09ZQP9LB6"> Link </a> |
-| 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $5.00 | <a href="https://www.amazon.com/SanDisk-microSD-High-Capacity-microSDHC/dp/B00488G6P8"> Link </a> |
-| L298N Mini Motor Driver | Controls the two DC motors | $3.00 | <a href="https://www.amazon.com/WWZMDiB-Channel-Bridge-Electric-Projects/dp/B0BD53Q7TT"> Link </a> |
-| Speaker 8 Ohm | Outputs sound from DFPlayer Mini | $2.00 | <a href="https://www.amazon.com/MakerHawk-Full-Range-Advertising-Separating-JST-PH2-0mm-2/dp/B07FTB281F"> Link </a> |
+| LCD Screen 16x2 with I2C | Displays current direction on robot | $9.00 | <a href="https://www.amazon.com/GeeekPi-Character-Backlight-Raspberry-Electrical/dp/B07S7PJYM6"> Link </a> |
+| DFPlayer Mini | Plays sound effects for each movement | $9.00 | <a href="https://www.amazon.com/DFPlayer-A-Mini-MP3-Player/dp/B089D5NLW1"> Link </a> |
+| Jumper Wires | Connects all components together | $6.00 | <a href="https://www.amazon.com/ELEGOO-Solderless-Flexible-Breadboard-Compatible/dp/B09ZQP9LB6"> Link </a> |
+| 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $20.00 | <a href="https://www.amazon.com/SanDisk-microSD-High-Capacity-microSDHC/dp/B00488G6P8"> Link </a> |
+| L298N Mini Motor Driver | Controls the two DC motors | $7.00 | <a href="https://www.amazon.com/WWZMDiB-Channel-Bridge-Electric-Projects/dp/B0BD53Q7TT"> Link </a> |
+| Speaker 8 Ohm | Outputs sound from DFPlayer Mini | $10.00 | <a href="https://www.amazon.com/MakerHawk-Full-Range-Advertising-Separating-JST-PH2-0mm-2/dp/B07FTB281F"> Link </a> |
 ## Other Resources/Examples
 
 - [Hand Gesture Control Robot via Bluetooth - Hackster.io](https://www.hackster.io/embeddedlab786/hand-gesture-control-robot-via-bluetooth-94b13d)

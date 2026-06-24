@@ -60,8 +60,10 @@ Here's where you'll put images of your schematics. [Tinkercad](https://www.tinke
 # Code
 Here's where you'll put your code. The syntax below places it into a block of code. Follow the guide [here]([url](https://www.markdownguide.org/extended-syntax/)) to learn how to customize it to your project needs. 
 
-Glove code:
+## Code
 
+**Glove Code:**
+```cpp
 #include <SoftwareSerial.h>
 #include <Wire.h>
 #include <MPU6050.h>
@@ -91,33 +93,70 @@ void loop() {
   BTSerial.print(cmd);
   delay(100);
 }
+```
 
+**Robot Code:**
+```cpp
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>
+#include <DFRobotDFPlayerMini.h>
 
-Robot Code:
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+SoftwareSerial mySoftwareSerial(7, 8);
+DFRobotDFPlayerMini myDFPlayer;
 
 #define IN1 5
 #define IN2 6
 #define IN3 10
 #define IN4 11
 
+char lastCmd = ' ';
+
 void setup() {
   Serial.begin(9600);
+  mySoftwareSerial.begin(9600);
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Robot Ready!");
+  myDFPlayer.begin(mySoftwareSerial);
+  myDFPlayer.volume(30);
+  myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
+  myDFPlayer.play(1);
   stopMotors();
 }
 
 void loop() {
   if (Serial.available()) {
     char cmd = Serial.read();
-    if (cmd == 'R') stopMotors();
-    else if (cmd == 'F') turnRight();
-    else if (cmd == 'B') turnLeft();
-    else if (cmd == 'L') forward();
-    else if (cmd == 'S') backward();
+    if (cmd != lastCmd) {
+      lastCmd = cmd;
+      if (cmd == 'R') { stopMotors(); showDirection("STOPPED"); myDFPlayer.stop(); myDFPlayer.play(5); }
+      else if (cmd == 'B') { forward(); showDirection("GOING BACKWARD"); myDFPlayer.stop(); myDFPlayer.play(3); }
+      else if (cmd == 'F') { backward(); showDirection("GOING FORWARD"); myDFPlayer.stop(); myDFPlayer.play(2); }
+      else if (cmd == 'L') { turnLeft(); showDirection("GOING RIGHT"); myDFPlayer.stop(); myDFPlayer.play(4); }
+      else if (cmd == 'S') { turnRight(); showDirection("GOING LEFT"); myDFPlayer.stop(); myDFPlayer.play(4); }
+    } else {
+      if (cmd == 'R') stopMotors();
+      else if (cmd == 'B') forward();
+      else if (cmd == 'F') backward();
+      else if (cmd == 'L') turnLeft();
+      else if (cmd == 'S') turnRight();
+    }
   }
+}
+
+void showDirection(String dir) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Direction:");
+  lcd.setCursor(0, 1);
+  lcd.print(dir);
 }
 
 void forward() {
@@ -144,6 +183,7 @@ void stopMotors() {
   digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
 }
+```
 # Bill of Materials
 Here's where you'll list the parts in your project. To add more rows, just copy and paste the example rows below.
 Don't forget to place the link of where to buy each component inside the quotation marks in the corresponding row after href =. Follow the guide [here]([url](https://www.markdownguide.org/extended-syntax/)) to learn how to customize this to your project needs. 

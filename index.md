@@ -187,22 +187,22 @@ void stopMotors() {
 |:--:|:--:|:--:|:--:|
 | Car Chassis Kit | Robot base with motors and wheels | $39.99 | <a href="https://www.amazon.com"> Link </a> |
 | Screwdriver Kit | For assembly | $5.94 | <a href="https://www.amazon.com"> Link </a> |
-| Arduino Uno Clone x2 | Main controllers for robot and glove | $14.98 | <a href="https://www.amazon.com"> Link </a> |
+| Arduino Uno Clone x2 | Main controllers for robot and glove | $14.98 | <a href="https://www.amazon.com/ELEGOO-Project-Tutorial-Controller-Projects/dp/B01D8KOZF4"> Link </a> |
 | Electronics Kit | Jumper wires, resistors, components | $14.00 | <a href="https://www.amazon.com"> Link </a> |
-| Breadboard Kit | For prototyping connections | $8.79 | <a href="https://www.amazon.com"> Link </a> |
-| Arduino Nano 33 | Glove controller | $39.70 | <a href="https://www.amazon.com"> Link </a> |
+| Breadboard Kit | For prototyping connections | $8.79 | <a href="https://www.amazon.com/Paxcoo-Breadboards-Arduino-Circboard-Prototyping/dp/B0727X6N9D"> Link </a> |
+| Arduino Nano Every | Glove controller | $39.70 | <a href="https://www.amazon.com"> Link </a> |
 | Micro USB Cable | For programming Arduinos | $5.00 | <a href="https://www.amazon.com"> Link </a> |
-| MPU6050 Accelerometer | Detects hand tilt gestures | $9.00 | <a href="https://www.amazon.com"> Link </a> |
-| HC-05 Bluetooth x2 | Wireless communication between glove and robot | $9.00 | <a href="https://www.amazon.com"> Link </a> |
+| MPU6050 Accelerometer | Detects hand tilt gestures | $9.00 | <a href="https://www.amazon.com/HiLetgo-MPU-6050-Accelerometer-Gyroscope-Converter/dp/B078SS8NQV"> Link </a> |
+| HC-05 Bluetooth x2 | Wireless communication between glove and robot | $9.00 | <a href="https://www.amazon.com/HiLetgo-Bluetooth-Transceiver-Integrated-Communication/dp/B07VL725T8"> Link </a> |
 | Breadboard Power Supply | Powers breadboard components | $8.00 | <a href="https://www.amazon.com"> Link </a> |
 | 9V Batteries | Powers robot and glove | $8.69 | <a href="https://www.amazon.com"> Link </a> |
 | Velcro Tape | Mounts components to glove and robot | $8.00 | <a href="https://www.amazon.com"> Link </a> |
 | DMM | Multimeter for debugging | $9.99 | <a href="https://www.amazon.com"> Link </a> |
-| LCD Screen 16x2 with I2C | Displays current direction on robot | $4.00 | <a href="https://www.amazon.com"> Link </a> |
-| DFPlayer Mini | Plays sound effects for each movement | $3.00 | <a href="https://www.amazon.com"> Link </a> |
-| Jumper Wires | Connects all components together | $3.00 | <a href="https://www.amazon.com"> Link </a> |
-| 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $5.00 | <a href="https://www.amazon.com"> Link </a> |
-| L298N Mini Motor Driver | Controls the two DC motors | $3.00 | <a href="https://www.amazon.com"> Link </a> |
-| Speaker | Outputs sound from DFPlayer Mini | $2.00 | <a href="https://www.amazon.com"> Link </a> |
+| LCD Screen 16x2 with I2C | Displays current direction on robot | $4.00 | <a href="https://www.amazon.com/GeeekPi-Character-Backlight-Raspberry-Electrical/dp/B07S7PJYM6"> Link </a> |
+| DFPlayer Mini | Plays sound effects for each movement | $3.00 | <a href="https://www.amazon.com/DFPlayer-A-Mini-MP3-Player/dp/B089D5NLW1"> Link </a> |
+| Jumper Wires | Connects all components together | $3.00 | <a href="https://www.amazon.com/ELEGOO-Solderless-Flexible-Breadboard-Compatible/dp/B09ZQP9LB6"> Link </a> |
+| 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $5.00 | <a href="https://www.amazon.com/SanDisk-microSD-High-Capacity-microSDHC/dp/B00488G6P8"> Link </a> |
+| L298N Mini Motor Driver | Controls the two DC motors | $3.00 | <a href="https://www.amazon.com/WWZMDiB-Channel-Bridge-Electric-Projects/dp/B0BD53Q7TT"> Link </a> |
+| Speaker 8 Ohm | Outputs sound from DFPlayer Mini | $2.00 | <a href="https://www.amazon.com/MakerHawk-Full-Range-Advertising-Separating-JST-PH2-0mm-2/dp/B07FTB281F"> Link </a> |
 - [Hand Gesture Control Robot via Bluetooth - Hackster.io](https://www.hackster.io/embeddedlab786/hand-gesture-control-robot-via-bluetooth-94b13d)
 - [Hand Gesture Controlled Robot - YouTube](https://www.youtube.com/watch?v=BXXAcFOTnBo)

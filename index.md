@@ -13,37 +13,45 @@ Adhrit M | Fallon Middle School | Bioengineering | Incoming 9th Grader
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/8tovYcNzq1s?si=dPka2gW4jlUlIRyM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-For your final milestone, explain the outcome of your project. Key details to include are:
-- What you've accomplished since your previous milestone
-- What your biggest challenges and triumphs were at BSE
-- A summary of key topics you learned about
-- What you hope to learn in the future after everything you've learned at BSE
+For my final milestone I completed all 3 modifications I planned — a direct 9V battery connection to the motor driver for more speed, an LCD screen that displays the current direction in real time, and a DFPlayer Mini that plays different sound effects for each movement using MP3 files on a micro SD card.
+
+**Biggest Challenges and Triumphs:**
+The hardest part of the whole project was debugging hardware — things like a missing GND wire or a loose breadboard connection would break everything and take forever to find. My biggest triumph was getting the full robot working with all 3 modifications together — motors, Bluetooth, screen, and sound all running at the same time.
+
+**Key Topics I Learned:**
+- Bluetooth communication with HC-05 modules
+- gesture sensor data with MPU6050
+- Motor control with L298N motor driver
+- I2C communication for the LCD screen
+- Serial communication for DFPlayer Mini
+- Arduino SoftwareSerial library
+
+**What I Hope to Learn Next:**
+I want to learn more about PCB design so I can make my own custom circuit boards instead of using jumper wires everywhere. I also want to explore more advanced sensors and eventually build something that can do way more things at the same time 
 
 # First Milestone
 
  <iframe width="560" height="315" src="https://www.youtube.com/embed/FbHnvSsPRkI?si=nOQB-oQah-txIDwg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-First Milestone
-- I Finished base progect. (Wiring + Code)
+For my first milestone I finished the base project — all the wiring and code for the gesture controlled robot.
 
-How It Works 
-- You tilt your hand. 
-- the MPU6050 detects that and sends the tilt coordinates over to the hand Arduino
-- Hand Arduino reads the tilt values and sends commands over Bluetooth via HC-05 to the robots arduino 
-- Robot Arduino receives the commands and controls the L298N motor driver
-- L298N drives the two DC motors according to the gesture you chose
+**How It Works:**
+- You tilt your hand
+- The MPU6050 detects that and sends the tilt coordinates to the hand Arduino
+- The hand Arduino reads the tilt values and sends commands over Bluetooth via HC-05 to the robot's Arduino
+- The robot Arduino receives the commands and controls the L298N motor driver
+- The L298N drives the two DC motors according to the gesture you chose
 
-
-Hardest Parts
+**Hardest Parts:**
 - Getting the two HC-05 modules to pair
-- MPU6050 not being detected (breadboard connection issue)
+- MPU6050 not being detected due to a breadboard connection issue
 - Calibrating the tilt thresholds for each direction
 - Motor directions being reversed
 
-Plans after First Milestone
+**Plans After First Milestone:**
 - Connecting a battery directly to the motor driver for more speed
-- Adding a screen that displays the way its moving or like a message
-- Adding Sound effects with DFPlayer Mini
+- Adding a screen that displays the current direction
+- Adding sound effects with DFPlayer Mini
 
 
 # Schematics 

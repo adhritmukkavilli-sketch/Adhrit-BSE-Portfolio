@@ -191,6 +191,7 @@ Don't forget to place the link of where to buy each component inside the quotati
 | Item Name | What the item is used for | $Price | <a href="https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6/"> Link </a> |
 | Item Name | What the item is used for | $Price | <a href="https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6/"> Link </a> |
 
-# Other Resources/Examples
-https://www.hackster.io/embeddedlab786/hand-gesture-control-robot-via-bluetooth-94b13d
-https://www.youtube.com/watch?v=BXXAcFOTnBo
+## Other Resources/Examples
+
+- [Hand Gesture Control Robot via Bluetooth - Hackster.io](https://www.hackster.io/embeddedlab786/hand-gesture-control-robot-via-bluetooth-94b13d)
+- [Hand Gesture Controlled Robot - YouTube](https://www.youtube.com/watch?v=BXXAcFOTnBo)

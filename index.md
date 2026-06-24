@@ -182,16 +182,27 @@ void stopMotors() {
 }
 ```
 # Bill of Materials
-Here's where you'll list the parts in your project. To add more rows, just copy and paste the example rows below.
-Don't forget to place the link of where to buy each component inside the quotation marks in the corresponding row after href =. Follow the guide [here]([url](https://www.markdownguide.org/extended-syntax/)) to learn how to customize this to your project needs. 
 
 | **Part** | **Note** | **Price** | **Link** |
 |:--:|:--:|:--:|:--:|
-| Item Name | What the item is used for | $Price | <a href="https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6/"> Link </a> |
-| Item Name | What the item is used for | $Price | <a href="https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6/"> Link </a> |
-| Item Name | What the item is used for | $Price | <a href="https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6/"> Link </a> |
-
-## Other Resources/Examples
-
+| Car Chassis Kit | Robot base with motors and wheels | $39.99 | <a href="https://www.amazon.com"> Link </a> |
+| Screwdriver Kit | For assembly | $5.94 | <a href="https://www.amazon.com"> Link </a> |
+| Arduino Uno Clone x2 | Main controllers for robot and glove | $14.98 | <a href="https://www.amazon.com"> Link </a> |
+| Electronics Kit | Jumper wires, resistors, components | $14.00 | <a href="https://www.amazon.com"> Link </a> |
+| Breadboard Kit | For prototyping connections | $8.79 | <a href="https://www.amazon.com"> Link </a> |
+| Arduino Nano 33 | Glove controller | $39.70 | <a href="https://www.amazon.com"> Link </a> |
+| Micro USB Cable | For programming Arduinos | $5.00 | <a href="https://www.amazon.com"> Link </a> |
+| MPU6050 Accelerometer | Detects hand tilt gestures | $9.00 | <a href="https://www.amazon.com"> Link </a> |
+| HC-05 Bluetooth x2 | Wireless communication between glove and robot | $9.00 | <a href="https://www.amazon.com"> Link </a> |
+| Breadboard Power Supply | Powers breadboard components | $8.00 | <a href="https://www.amazon.com"> Link </a> |
+| 9V Batteries | Powers robot and glove | $8.69 | <a href="https://www.amazon.com"> Link </a> |
+| Velcro Tape | Mounts components to glove and robot | $8.00 | <a href="https://www.amazon.com"> Link </a> |
+| DMM | Multimeter for debugging | $9.99 | <a href="https://www.amazon.com"> Link </a> |
+| LCD Screen 16x2 with I2C | Displays current direction on robot | $4.00 | <a href="https://www.amazon.com"> Link </a> |
+| DFPlayer Mini | Plays sound effects for each movement | $3.00 | <a href="https://www.amazon.com"> Link </a> |
+| Jumper Wires | Connects all components together | $3.00 | <a href="https://www.amazon.com"> Link </a> |
+| 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $5.00 | <a href="https://www.amazon.com"> Link </a> |
+| L298N Mini Motor Driver | Controls the two DC motors | $3.00 | <a href="https://www.amazon.com"> Link </a> |
+| Speaker | Outputs sound from DFPlayer Mini | $2.00 | <a href="https://www.amazon.com"> Link </a> |
 - [Hand Gesture Control Robot via Bluetooth - Hackster.io](https://www.hackster.io/embeddedlab786/hand-gesture-control-robot-via-bluetooth-94b13d)
 - [Hand Gesture Controlled Robot - YouTube](https://www.youtube.com/watch?v=BXXAcFOTnBo)

@@ -1,12 +1,14 @@
-# Gesture Controlled Robot 
-Two-wheeled robot controlled entirely by hand gestures using Bluetooth. An MPU6050 on the controller detects hand tilt and sends directional commands wirelessly via HC-05 Bluetooth modules to the robot. The biggest challenge was calibrating the gyroscope thresholds and getting the two Bluetooth modules to pair correctly."
+# Gesture Controlled Robot
+Two-wheeled robot controlled entirely by hand gestures using Bluetooth. An MPU6050 on the controller detects hand tilt and sends directional commands wirelessly via HC-05 Bluetooth modules to the robot. The biggest challenge was calibrating the gyroscope thresholds and getting the two Bluetooth modules to pair correctly.
 
 Engineer | School | Area of Interest | Grade
 :--: | :--: | :--: | :--:
 Adhrit M | Fallon Middle School | Bioengineering | Incoming 9th Grader
 
-<img width="370" height="497" alt="Screenshot 2026-06-26 at 11 54 13 AM" src="https://github.com/user-attachments/assets/867ce68b-711f-483f-ab02-a532c474ed99" />
-  
+<img width="370" height="497" alt="Screenshot 2026-06-26 at 11 54 13 AM" src="https://github.com/user-attachments/assets/867ce68b-711f-483f-ab02-a532c474ed99" />
+
+---
+
 # Final Milestone
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/8tovYcNzq1s?si=dPka2gW4jlUlIRyM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
@@ -18,18 +20,20 @@ The hardest part of the whole project was debugging hardware — things like a m
 
 **Key Topics I Learned:**
 - Bluetooth communication with HC-05 modules
-- gesture sensor data with MPU6050
+- Gesture sensor data with MPU6050
 - Motor control with L298N motor driver
 - I2C communication for the LCD screen
 - Serial communication for DFPlayer Mini
 - Arduino SoftwareSerial library
 
 **What I Hope to Learn Next:**
-I want to learn more about PCB design so I can make my own custom circuit boards instead of using jumper wires everywhere. I also want to explore more advanced sensors and eventually build something that can do way more things at the same time 
+I want to learn more about PCB design so I can make my own custom circuit boards instead of using jumper wires everywhere. I also want to explore more advanced sensors and eventually build something that can do way more things at the same time.
+
+---
 
 # First Milestone
 
- <iframe width="560" height="315" src="https://www.youtube.com/embed/FbHnvSsPRkI?si=nOQB-oQah-txIDwg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/FbHnvSsPRkI?si=nOQB-oQah-txIDwg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 For my first milestone I finished the base project — all the wiring and code for the gesture controlled robot.
 
@@ -51,11 +55,59 @@ For my first milestone I finished the base project — all the wiring and code f
 - Adding a screen that displays the current direction
 - Adding sound effects with DFPlayer Mini
 
+---
 
-# Schematics 
-Here's where you'll put images of your schematics. [Tinkercad](https://www.tinkercad.com/blog/official-guide-to-tinkercad-circuits) and [Fritzing](https://fritzing.org/learning/) are both great resoruces to create professional schematic diagrams, though BSE recommends Tinkercad becuase it can be done easily and for free in the browser. 
+# Schematics
 
-## Code
+## 📐 Wiring Schematic
+
+<img width="1157" height="683" alt="Gesture Robot Wiring Schematic" src="https://github.com/user-attachments/assets/f5bb9bee-ff7b-4c71-93fe-8ed7543931b7" />
+
+## 🔄 Pin Substitution Chart
+
+### HC-05 Bluetooth Module → HC-SR04 (substitute)
+> Used twice — once on the transmitter Arduino, once on the receiver Arduino.
+
+| Real HC-05 Pin | Function | HC-SR04 Substitute Pin | Wire Color |
+|:-:|:-|:-:|:-:|
+| `VCC` | Power 3.3V–5V | `VCC` | 🔴 Red |
+| `GND` | Ground | `GND` | ⚫ Black |
+| `TXD` | Transmit data → Arduino RX | `TRIG` | 🔵 Blue |
+| `RXD` | Receive data ← Arduino TX | `ECHO` | 🟢 Green |
+
+### MPU6050 Gyroscope → LM393 Comparator IC (substitute)
+
+| Real MPU6050 Pin | Function | LM393 Substitute Pin | Wire Color |
+|:-:|:-|:-:|:-:|
+| `VCC` | Power 3.3V | `Pin 8 (V+)` | 🔴 Red |
+| `GND` | Ground | `Pin 4 (GND)` | ⚫ Black |
+| `SDA` | I2C data → Arduino A4 | `Pin 2 (IN-)` | 🟡 Yellow |
+| `SCL` | I2C clock → Arduino A5 | `Pin 3 (IN+)` | 🟠 Orange |
+| `INT` | Interrupt → Arduino D2 (optional) | `Pin 1 (OUT)` | 🟣 Purple |
+
+### DFPlayer Mini → Passive Buzzer (substitute)
+> The buzzer only beeps in Fritzing — the real DFPlayer plays audio files via Serial.
+
+| Real DFPlayer Pin | Function | Buzzer Substitute Pin | Wire Color |
+|:-:|:-|:-:|:-:|
+| `VCC` | Power 5V | `+ (positive)` | 🔴 Red |
+| `GND` | Ground | `- (negative)` | ⚫ Black |
+| `RX` | Serial from Arduino TX | `+ (signal)` | 🔵 Blue |
+
+### ✅ No Substitution Needed
+
+| Component | Fritzing Part | Status |
+|:-|:-|:-:|
+| Arduino Uno × 2 | Arduino Uno | ✅ Exact match |
+| L298N Motor Driver | L298N | ✅ Exact match |
+| LCD 16×2 (I2C) | LCD 16×2 | ✅ Exact match |
+| DC Motors × 2 | DC Motor (yellow gearbox) | ✅ Exact match |
+| 9V Battery × 2 | 9V Battery | ✅ Exact match |
+| Breadboard | Breadboard | ✅ Exact match |
+
+---
+
+# Code
 
 **Glove Code:**
 ```cpp
@@ -178,35 +230,35 @@ void stopMotors() {
   digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
 }
-
-
 ```
-# Bill of Materials
 
+---
 
-```
 # Bill of Materials
 
 | **Part** | **Note** | **Price** | **Link** |
 |:--:|:--:|:--:|:--:|
-| Car Chassis Kit | Robot base with motors and wheels | $39.99 | <a href="https://www.amazon.com/dp/B0DJ7BT1V5"> Link </a> |
-| Screwdriver Kit | For assembly | $5.94 | <a href="https://www.amazon.com/Small-Screwdriver-Set-Mini-Magnetic/dp/B08RYXKJW9"> Link </a> |
-| Arduino Uno Clone x2 | Main controllers for robot and glove | $14.98 | <a href="https://www.amazon.com/ELEGOO-Board-ATmega328P-ATMEGA16U2-Compliant/dp/B01EWOE0UU"> Link </a> |
-| Electronics Kit | Jumper wires, resistors, components | $14.00 | <a href="https://www.amazon.com/Smraza-Electronics-Potentiometer-tie-Points-Breadboard/dp/B0B62RL725"> Link </a> |
-| Breadboard Kit | For prototyping connections | $8.79 | <a href="https://www.amazon.com/Breadboards-Solderless-Breadboard-Distribution-Connecting/dp/B07DL13RZH"> Link </a> |
-| Micro USB Cable | For programming Arduinos | $5.00 | <a href="https://www.amazon.com/Charging-Transfer-Android-Trustable-MYFON/dp/B098DW7485"> Link </a> |
-| MPU6050 Accelerometer | Detects hand tilt gestures | $9.00 | <a href="https://www.amazon.com/dp/B0D2TJVMNY"> Link </a> |
-| HC-05 Bluetooth x2 | Wireless communication between glove and robot | $9.00 | <a href="https://www.amazon.com/DSD-TECH-HC-05-Pass-through-Communication/dp/B01G9KSAF6"> Link </a> |
-| Breadboard Power Supply | Powers breadboard components | $8.00 | <a href="https://www.amazon.com/ALAMSCN-Solderless-Breadboard-Battery-Arduino/dp/B08JYPMCZY"> Link </a> |
-| 9V Batteries | Powers robot and glove | $8.69 | <a href="https://www.amazon.com/Amazon-Basics-Performance-All-Purpose-Batteries/dp/B00MH4QM1S"> Link </a> |
-| Velcro Tape | Mounts components to glove and robot | $8.00 | <a href="https://www.amazon.com/Art3d-Sticky-Double-Sided-Command-Adhesive/dp/B0B58FGF8H"> Link </a> |
-| DMM | Multimeter for debugging | $9.99 | <a href="https://www.amazon.com/dp/B0CXM242J1"> Link </a> |
-| LCD Screen 16x2 with I2C | Displays current direction on robot | $9.00 | <a href="https://www.amazon.com/GeeekPi-Character-Backlight-Raspberry-Electrical/dp/B07S7PJYM6"> Link </a> |
-| DFPlayer Mini | Plays sound effects for each movement | $9.00 | <a href="https://www.amazon.com/DFPlayer-A-Mini-MP3-Player/dp/B089D5NLW1"> Link </a> |
-| Jumper Wires | Connects all components together | $6.00 | <a href="https://www.amazon.com/ELEGOO-Solderless-Flexible-Breadboard-Compatible/dp/B09ZQP9LB6"> Link </a> |
-| 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $20.00 | <a href="https://www.amazon.com/SanDisk-microSD-High-Capacity-microSDHC/dp/B00488G6P8"> Link </a> |
-| L298N Mini Motor Driver | Controls the two DC motors | $7.00 | <a href="https://www.amazon.com/WWZMDiB-Channel-Bridge-Electric-Projects/dp/B0BD53Q7TT"> Link </a> |
-| Speaker 8 Ohm | Outputs sound from DFPlayer Mini | $10.00 | <a href="https://www.amazon.com/MakerHawk-Full-Range-Advertising-Separating-JST-PH2-0mm-2/dp/B07FTB281F"> Link </a> |
+| Car Chassis Kit | Robot base with motors and wheels | $39.99 | [Link](https://www.amazon.com/dp/B0DJ7BT1V5) |
+| Screwdriver Kit | For assembly | $5.94 | [Link](https://www.amazon.com/Small-Screwdriver-Set-Mini-Magnetic/dp/B08RYXKJW9) |
+| Arduino Uno Clone x2 | Main controllers for robot and glove | $14.98 | [Link](https://www.amazon.com/ELEGOO-Board-ATmega328P-ATMEGA16U2-Compliant/dp/B01EWOE0UU) |
+| Electronics Kit | Jumper wires, resistors, components | $14.00 | [Link](https://www.amazon.com/Smraza-Electronics-Potentiometer-tie-Points-Breadboard/dp/B0B62RL725) |
+| Breadboard Kit | For prototyping connections | $8.79 | [Link](https://www.amazon.com/Breadboards-Solderless-Breadboard-Distribution-Connecting/dp/B07DL13RZH) |
+| Micro USB Cable | For programming Arduinos | $5.00 | [Link](https://www.amazon.com/Charging-Transfer-Android-Trustable-MYFON/dp/B098DW7485) |
+| MPU6050 Accelerometer | Detects hand tilt gestures | $9.00 | [Link](https://www.amazon.com/dp/B0D2TJVMNY) |
+| HC-05 Bluetooth x2 | Wireless communication between glove and robot | $9.00 | [Link](https://www.amazon.com/DSD-TECH-HC-05-Pass-through-Communication/dp/B01G9KSAF6) |
+| Breadboard Power Supply | Powers breadboard components | $8.00 | [Link](https://www.amazon.com/ALAMSCN-Solderless-Breadboard-Battery-Arduino/dp/B08JYPMCZY) |
+| 9V Batteries | Powers robot and glove | $8.69 | [Link](https://www.amazon.com/Amazon-Basics-Performance-All-Purpose-Batteries/dp/B00MH4QM1S) |
+| Velcro Tape | Mounts components to glove and robot | $8.00 | [Link](https://www.amazon.com/Art3d-Sticky-Double-Sided-Command-Adhesive/dp/B0B58FGF8H) |
+| DMM | Multimeter for debugging | $9.99 | [Link](https://www.amazon.com/dp/B0CXM242J1) |
+| LCD Screen 16x2 with I2C | Displays current direction on robot | $9.00 | [Link](https://www.amazon.com/GeeekPi-Character-Backlight-Raspberry-Electrical/dp/B07S7PJYM6) |
+| DFPlayer Mini | Plays sound effects for each movement | $9.00 | [Link](https://www.amazon.com/DFPlayer-A-Mini-MP3-Player/dp/B089D5NLW1) |
+| Jumper Wires | Connects all components together | $6.00 | [Link](https://www.amazon.com/ELEGOO-Solderless-Flexible-Breadboard-Compatible/dp/B09ZQP9LB6) |
+| 8GB Micro SD Card | Stores MP3 sound files for DFPlayer | $20.00 | [Link](https://www.amazon.com/SanDisk-microSD-High-Capacity-microSDHC/dp/B00488G6P8) |
+| L298N Mini Motor Driver | Controls the two DC motors | $7.00 | [Link](https://www.amazon.com/WWZMDiB-Channel-Bridge-Electric-Projects/dp/B0BD53Q7TT) |
+| Speaker 8 Ohm | Outputs sound from DFPlayer Mini | $10.00 | [Link](https://www.amazon.com/MakerHawk-Full-Range-Advertising-Separating-JST-PH2-0mm-2/dp/B07FTB281F) |
+
+---
+
 ## Other Resources/Examples
 
 - [Hand Gesture Control Robot via Bluetooth - Hackster.io](https://www.hackster.io/embeddedlab786/hand-gesture-control-robot-via-bluetooth-94b13d)

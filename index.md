@@ -5,9 +5,7 @@ Engineer | School | Area of Interest | Grade
 :--: | :--: | :--: | :--:
 Adhrit M | Fallon Middle School | Bioengineering | Incoming 9th Grader
 
-**Replace the BlueStamp logo below with an image of yourself and your completed project. Follow the guide [here](https://tomcam.github.io/least-github-pages/adding-images-github-pages-site.html) if you need help.**
-
-![Headstone Image](logo.svg)
+<img width="1157" height="683" alt="Screenshot 2026-06-25 at 12 37 09 PM" src="https://github.com/user-attachments/assets/f5bb9bee-ff7b-4c71-93fe-8ed7543931b7" />
   
 # Final Milestone
 

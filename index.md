@@ -179,6 +179,63 @@ void stopMotors() {
   digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
 }
 
+## 📐 Wiring Schematic
+
+<img width="1157" height="683" alt="Gesture Robot Wiring Schematic" src="https://github.com/user-attachments/assets/f5bb9bee-ff7b-4c71-93fe-8ed7543931b7" />
+
+---
+
+## 🔄 Pin Substitution Chart
+
+### HC-05 Bluetooth Module → HC-SR04 (substitute)
+> Used twice — once on the transmitter Arduino, once on the receiver Arduino.
+
+| Real HC-05 Pin | Function | HC-SR04 Substitute Pin | Wire Color |
+|:-:|:-|:-:|:-:|
+| `VCC` | Power 3.3V–5V | `VCC` | 🔴 Red |
+| `GND` | Ground | `GND` | ⚫ Black |
+| `TXD` | Transmit data → Arduino RX | `TRIG` | 🔵 Blue |
+| `RXD` | Receive data ← Arduino TX | `ECHO` | 🟢 Green |
+
+---
+
+### MPU6050 Gyroscope → LM393 Comparator IC (substitute)
+
+| Real MPU6050 Pin | Function | LM393 Substitute Pin | Wire Color |
+|:-:|:-|:-:|:-:|
+| `VCC` | Power 3.3V | `Pin 8 (V+)` | 🔴 Red |
+| `GND` | Ground | `Pin 4 (GND)` | ⚫ Black |
+| `SDA` | I2C data → Arduino A4 | `Pin 2 (IN-)` | 🟡 Yellow |
+| `SCL` | I2C clock → Arduino A5 | `Pin 3 (IN+)` | 🟠 Orange |
+| `INT` | Interrupt → Arduino D2 (optional) | `Pin 1 (OUT)` | 🟣 Purple |
+
+---
+
+### DFPlayer Mini → Passive Buzzer (substitute)
+> The buzzer only beeps in Fritzing — the real DFPlayer plays audio files via Serial.
+
+| Real DFPlayer Pin | Function | Buzzer Substitute Pin | Wire Color |
+|:-:|:-|:-:|:-:|
+| `VCC` | Power 5V | `+ (positive)` | 🔴 Red |
+| `GND` | Ground | `- (negative)` | ⚫ Black |
+| `RX` | Serial from Arduino TX | `+ (signal)` | 🔵 Blue |
+
+---
+
+## ✅ No Substitution Needed
+
+| Component | Fritzing Part | Status |
+|:-|:-|:-:|
+| Arduino Uno × 2 | Arduino Uno | ✅ Exact match |
+| L298N Motor Driver | L298N | ✅ Exact match |
+| LCD 16×2 (I2C) | LCD 16×2 | ✅ Exact match |
+| DC Motors × 2 | DC Motor (yellow gearbox) | ✅ Exact match |
+| 9V Battery × 2 | 9V Battery | ✅ Exact match |
+| Breadboard | Breadboard | ✅ Exact match |
+
+
+
+
 
 ```
 # Bill of Materials

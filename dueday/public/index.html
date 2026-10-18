@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DueDay</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Login -->
+  <main id="login" class="card narrow" hidden>
+    <h1>DueDay</h1>
+    <p class="muted">Everything you have due, from every class website, in one list.</p>
+    <form id="email-form">
+      <label for="email">School or personal email</label>
+      <input id="email" type="email" autocomplete="email" required placeholder="you@school.org">
+      <button type="submit">Send me a code</button>
+    </form>
+    <form id="code-form" hidden>
+      <label for="code">Enter the 6-digit code we sent to <b id="code-email"></b></label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="123456">
+      <button type="submit">Log in</button>
+      <button type="button" class="link" id="code-back">Use a different email</button>
+    </form>
+    <p id="login-msg" class="msg" role="status"></p>
+  </main>
+
+  <!-- App -->
+  <div id="app" hidden>
+    <header class="top">
+      <div>
+        <h1>DueDay</h1>
+        <p class="muted" id="today-label"></p>
+      </div>
+      <div class="top-actions">
+        <button id="notify-btn" class="ghost">Turn on reminders</button>
+        <button id="logout-btn" class="ghost">Log out</button>
+      </div>
+    </header>
+
+    <p id="app-msg" class="msg" role="status"></p>
+
+    <section class="card">
+      <h2>Due today</h2>
+      <ul id="list-today" class="tasks"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Due tomorrow</h2>
+      <ul id="list-tomorrow" class="tasks"></ul>
+    </section>
+
+    <section class="card alert">
+      <h2>Tests &amp; quizzes in the next 7 days</h2>
+      <ul id="list-tests" class="tasks"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Coming up</h2>
+      <ul id="list-later" class="tasks"></ul>
+      <details>
+        <summary>Overdue / not checked off</summary>
+        <ul id="list-overdue" class="tasks"></ul>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Your class websites</h2>
+      <p class="muted">Paste your teachers' websites or your Canvas / Schoology / Google calendar links. We check them every few hours and tell you when something new shows up.</p>
+      <form id="source-form" class="row">
+        <input id="source-url" type="text" required placeholder="https://mrsmith-science.weebly.com/homework">
+        <input id="source-name" type="text" placeholder="Name (e.g. Science)" class="short">
+        <button type="submit">Add</button>
+      </form>
+      <ul id="sources" class="sources"></ul>
+      <button id="check-all" class="ghost">Check all now</button>
+    </section>
+
+    <section class="card">
+      <h2>Snap a photo</h2>
+      <p class="muted">Take a picture of a syllabus, worksheet or the whiteboard and we'll pull out the due dates.</p>
+      <label class="button" for="photo">Take or choose a photo</label>
+      <input id="photo" type="file" accept="image/*" capture="environment" hidden>
+      <p id="photo-msg" class="msg"></p>
+    </section>
+
+    <section class="card">
+      <h2>Add something yourself</h2>
+      <form id="task-form" class="row">
+        <input id="task-title" type="text" required placeholder="Read chapter 6">
+        <input id="task-due" type="date" required class="short">
+        <select id="task-kind" class="short">
+          <option value="assignment">Assignment</option>
+          <option value="test">Test</option>
+          <option value="quiz">Quiz</option>
+          <option value="project">Project</option>
+        </select>
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Settings</h2>
+      <label for="summary-time">Morning summary at</label>
+      <input id="summary-time" type="time" class="short">
+    </section>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# ZMPFRAC - simplifies the fraction U/V (integers, V≠0).
+# Output: Str9 = "N/D" (or just "N" when D=1)
+#         U,V  = simplified numerator/denominator, W = the GCD used
+If V<0
+Then
+  ⁻U→U
+  ⁻V→V
+End
+gcd(abs(U),V)→W
+U/W→U
+V/W→V
+toString(U)→Str9
+If V≠1
+Str9+"/"+toString(V)→Str9

@@ -1,0 +1,29 @@
+# ZMPGRAPH - graphs Y₁ from X=U to X=V with a window that fits it.
+# Uses U,V,W as scratch (they are changed).
+Func
+PlotsOff
+FnOff
+FnOn 1
+GraphColor(1,BLUE)
+AxesOn
+GridOff
+LabelOff
+ExprOff
+# Set Xmin very low first so Xmax can never be "below" Xmin
+⁻1ᴇ90→Xmin
+V→Xmax
+U→Xmin
+(V-U)/10→Xscl
+ZoomFit
+# Add 1/8 padding and make sure the x-axis (y=0) is visible
+Ymax-Ymin→W
+If W=0
+1→W
+min(0,Ymin-W/8)→U
+max(0,Ymax+W/8)→V
+⁻1ᴇ90→Ymin
+V→Ymax
+U→Ymin
+(V-U)/10→Yscl
+ClrDraw
+DispGraph

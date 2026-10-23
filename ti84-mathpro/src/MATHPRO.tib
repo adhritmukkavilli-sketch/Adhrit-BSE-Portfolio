@@ -1,0 +1,1601 @@
+# =====================================================================
+#  MATHPRO - a show-your-work math suite for the TI-84 Plus CE
+#  Made by {{FROM}} for {{TEACHER}}
+#
+#  Source format (handled by build.py):
+#    # ...        comment, removed at build time
+#    SHOW expr   -> expr→Str0 then prgmZMPSHOW   (a work step)
+#    ANS expr    -> "*"+expr→Str0 then prgmZMPSHOW (an answer, always shown)
+#    indentation is removed at build time
+#
+#  Reserved variables: θ (screen line count), U V W (helper args),
+#  Str0 (line to show), Str9 (fraction result), ʟMPSET (settings),
+#  ʟMPT ʟMPU (data lists)
+#  ʟMPSET = {show work, pace 1=page 2=line, decimals 0/2/4, bday seen, scratch}
+# =====================================================================
+SetUpEditor MPSET
+SetUpEditor
+If dim(ʟMPSET)<5
+{1,1,0,0,0}→ʟMPSET
+Func
+Real
+Float
+If ʟMPSET(3)=2
+Fix 2
+If ʟMPSET(3)=4
+Fix 4
+If not(ʟMPSET(4))
+Goto BD
+
+# ---------------------------------------------------------------- MAIN MENU
+Lbl M
+ClrHome
+Menu("MATHPRO  V1.0","ALGEBRA",A,"NUMBERS + CODE",N,"GEOMETRY + TRIG",G,"CALCULUS",C,"STATS + MONEY",S,"SETTINGS + MORE",O,"QUIT",Q)
+
+# Every tool ends here: wait for ENTER, then back to the main menu
+Lbl Z
+Pause
+Goto M
+
+# ================================================================ ALGEBRA
+Lbl A
+Menu("ALGEBRA","QUADRATIC",A1,"LINEAR EQUATION",A2,"SYSTEM 2X2",A3,"SYSTEM 3X3",A4,"EXPONENTIAL",A5,"SIMPLIFY RADICAL",A6,"BACK",M)
+
+# ---------------------------------------------------------------- quadratic
+Lbl A1
+ClrHome
+0→θ
+Disp "SOLVE AX²+BX+C=0"
+Prompt A,B,C
+If not(A)
+Disp "A CANNOT BE 0","(USE THE LINEAR SOLVER)"
+If not(A)
+Goto Z
+ClrHome
+0→θ
+B²-4AC→D
+not(fPart(A) or fPart(B) or fPart(C))→I
+ANS "== QUADRATIC =="
+SHOW "A="+toString(A)+" B="+toString(B)+" C="+toString(C)
+SHOW "STEP 1: DISCRIMINANT"
+SHOW "D=B²-4AC"
+SHOW "=("+toString(B)+")²-4("+toString(A)+")("+toString(C)+")"
+SHOW "D="+toString(D)
+If D>0
+Then
+  SHOW "D>0 SO 2 REAL ROOTS"
+End
+If D=0
+Then
+  SHOW "D=0 SO 1 DOUBLE ROOT"
+End
+If D<0
+Then
+  SHOW "D<0 SO 2 COMPLEX ROOTS"
+End
+SHOW "STEP 2: QUADRATIC FORMULA"
+SHOW "X=(⁻B+/-√(D))/(2A)"
+SHOW "=("+toString(⁻B)+"+/-√("+toString(D)+"))/"+toString(2A)
+√(abs(D))→R
+If D≠0
+Then
+  SHOW "√("+toString(abs(D))+")="+toString(R)
+End
+If D≥0
+Then
+  (⁻B+R)/(2A)→P
+  (⁻B-R)/(2A)→Q
+  ANS "X1="+toString(P)
+  ANS "X2="+toString(Q)
+Else
+  ⁻B/(2A)→P
+  R/abs(2A)→Q
+  ANS "X="+toString(P)+"+/-"+toString(Q)+"[i]"
+End
+# Exact answers (fractions / simplified radicals) for integer inputs
+If I and D=0
+Then
+  ⁻B→U
+  2A→V
+  prgmZMPFRAC
+  ANS "EXACT: X="+Str9
+End
+If I and D≠0
+Then
+  iPart(√(abs(D)))→K
+  While fPart(abs(D)/K²)
+    K-1→K
+  End
+  abs(D)/K²→M
+  If M=1 and D>0
+  Then
+    ⁻B+K→U
+    2A→V
+    prgmZMPFRAC
+    Str9→Str1
+    ⁻B-K→U
+    2A→V
+    prgmZMPFRAC
+    ANS "EXACT: X="+Str1+", "+Str9
+  Else
+    SHOW "√("+toString(abs(D))+")="+toString(K)+"√("+toString(M)+")"
+    gcd(gcd(abs(B),K),abs(2A))→G
+    ⁻B/G→U
+    K/G→V
+    2A/G→W
+    If W<0
+    Then
+      ⁻U→U
+      ⁻W→W
+    End
+    ""→Str2
+    If V≠1 or M=1
+    toString(V)→Str2
+    If M≠1
+    Str2+"√("+toString(M)+")"→Str2
+    If D<0
+    Str2+"[i]"→Str2
+    "("+toString(U)+"+/-"+Str2+")"→Str1
+    If W≠1
+    Str1+"/"+toString(W)→Str1
+    ANS "EXACT: X="+Str1
+  End
+End
+SHOW "STEP 3: VERTEX + SHAPE"
+⁻B/(2A)→H
+AH²+BH+C→K
+SHOW "H=⁻B/(2A)="+toString(H)
+SHOW "K=F(H)="+toString(K)
+ANS "VERTEX: ("+toString(H)+","+toString(K)+")"
+ANS "AXIS: X="+toString(H)
+If A>0
+Then
+  ANS "OPENS UP, MIN Y="+toString(K)
+Else
+  ANS "OPENS DOWN, MAX Y="+toString(K)
+End
+ANS "Y-INTERCEPT: (0,"+toString(C)+")"
+If D≥0
+Then
+  ANS "FACTORED: "+toString(A)+"(X-"+toString(P)+")(X-"+toString(Q)+")"
+End
+Pause
+Menu("GRAPH IT?","YES",A7,"NO, MAIN MENU",M)
+Lbl A7
+"AX²+BX+C"→Y₁
+max(4,2abs(P-Q))→S
+H-S→U
+H+S→V
+prgmZMPGRAPH
+Pt-On(H,K,2,GREEN)
+If D≥0
+Then
+  Pt-On(P,0,3,RED)
+  Pt-On(Q,0,3,RED)
+End
+TextColor(RED)
+Text(1,2,"X = ROOTS")
+TextColor(GREEN)
+Text(14,2,"BOX = VERTEX")
+Goto Z
+
+# ---------------------------------------------------------------- linear
+Lbl A2
+ClrHome
+0→θ
+Disp "SOLVE AX+B=CX+D"
+Prompt A,B,C,D
+ClrHome
+ANS "== LINEAR EQUATION =="
+SHOW toString(A)+"X+"+toString(B)+"="+toString(C)+"X+"+toString(D)
+SHOW "SUBTRACT "+toString(C)+"X FROM BOTH SIDES:"
+SHOW toString(A-C)+"X+"+toString(B)+"="+toString(D)
+SHOW "SUBTRACT "+toString(B)+" FROM BOTH SIDES:"
+SHOW toString(A-C)+"X="+toString(D-B)
+If A=C
+Then
+  If B=D
+  Then
+    ANS "0=0 IS ALWAYS TRUE:"
+    ANS "INFINITELY MANY SOLUTIONS"
+  Else
+    ANS "0="+toString(D-B)+" IS FALSE:"
+    ANS "NO SOLUTION"
+  End
+Else
+  SHOW "DIVIDE BOTH SIDES BY "+toString(A-C)+":"
+  (D-B)/(A-C)→X
+  ANS "X="+toString(X)
+  If fPart(X) and not(fPart(A) or fPart(B) or fPart(C) or fPart(D))
+  Then
+    D-B→U
+    A-C→V
+    prgmZMPFRAC
+    ANS "EXACT: X="+Str9
+  End
+  SHOW "CHECK: "+toString(AX+B)+"="+toString(CX+D)
+End
+Goto Z
+
+# ---------------------------------------------------------------- 2x2 system
+Lbl A3
+ClrHome
+0→θ
+Disp "AX+BY=C","DX+EY=F"
+Prompt A,B,C,D,E,F
+ClrHome
+ANS "== 2X2 SYSTEM =="
+SHOW "USING CRAMERS RULE"
+AE-BD→G
+SHOW "DET=AE-BD"
+SHOW "=("+toString(A)+")("+toString(E)+")-("+toString(B)+")("+toString(D)+")"
+SHOW "DET="+toString(G)
+If G=0
+Then
+  ANS "DET=0: NO UNIQUE SOLUTION"
+  If AF=CD and BF=CE
+  Then
+    ANS "SAME LINE: INFINITE"
+  Else
+    ANS "PARALLEL: NO SOLUTION"
+  End
+Else
+  CE-BF→H
+  AF-CD→K
+  SHOW "DETX=CE-BF="+toString(H)
+  SHOW "DETY=AF-CD="+toString(K)
+  H/G→X
+  K/G→Y
+  SHOW "X=DETX/DET="+toString(H)+"/"+toString(G)
+  SHOW "Y=DETY/DET="+toString(K)+"/"+toString(G)
+  ANS "X="+toString(X)
+  ANS "Y="+toString(Y)
+  If (fPart(X) or fPart(Y)) and not(fPart(A) or fPart(B) or fPart(C) or fPart(D) or fPart(E) or fPart(F))
+  Then
+    H→U
+    G→V
+    prgmZMPFRAC
+    Str9→Str1
+    K→U
+    G→V
+    prgmZMPFRAC
+    ANS "EXACT: X="+Str1+", Y="+Str9
+  End
+  SHOW "CHECK EQ 1: "+toString(AX+BY)+"="+toString(C)
+  SHOW "CHECK EQ 2: "+toString(DX+EY)+"="+toString(F)
+End
+Goto Z
+
+# ---------------------------------------------------------------- 3x3 system
+Lbl A4
+ClrHome
+0→θ
+Disp "AX+BY+CZ=D","TYPE EACH ROW AS A LIST","LIKE {2,1,⁻1,8}"
+{3,4}→dim([A])
+For(I,1,3)
+  Disp "ROW "+toString(I)
+  Input ":",ʟMPT
+  For(J,1,4)
+    ʟMPT(J)→[A](I,J)
+  End
+End
+ClrHome
+0→θ
+ANS "== 3X3 SYSTEM =="
+{3,3}→dim([B])
+For(I,1,3)
+  For(J,1,3)
+    [A](I,J)→[B](I,J)
+  End
+End
+det([B])→G
+SHOW "CRAMERS RULE: DET OF"
+SHOW "COEFFICIENTS="+toString(G)
+If G=0
+Then
+  ANS "DET=0: NO UNIQUE SOLUTION"
+Else
+  {0,0,0}→ʟMPU
+  For(K,1,3)
+    [B]→[C]
+    For(I,1,3)
+      [A](I,4)→[C](I,K)
+    End
+    det([C])→H
+    H/G→ʟMPU(K)
+    SHOW "DET"+sub("XYZ",K,1)+"="+toString(H)+" SO "+sub("XYZ",K,1)+"="+toString(H)+"/"+toString(G)
+  End
+  ANS "X="+toString(ʟMPU(1))
+  ANS "Y="+toString(ʟMPU(2))
+  ANS "Z="+toString(ʟMPU(3))
+End
+Goto Z
+
+# ---------------------------------------------------------------- exponential
+Lbl A5
+ClrHome
+0→θ
+Disp "SOLVE A*B^X=C"
+Prompt A,B,C
+If A=0 or B≤0 or B=1 or AC≤0
+Disp "NO REAL SOLUTION","(NEED B>0, B≠1, C/A>0)"
+If A=0 or B≤0 or B=1 or AC≤0
+Goto Z
+ClrHome
+ANS "== EXPONENTIAL =="
+SHOW "DIVIDE BOTH SIDES BY "+toString(A)+":"
+SHOW toString(B)+"^X="+toString(C/A)
+SHOW "TAKE LOG OF BOTH SIDES:"
+SHOW "X*LOG("+toString(B)+")=LOG("+toString(C/A)+")"
+SHOW "DIVIDE BY LOG("+toString(B)+"):"
+SHOW "X="+toString(log(C/A))+"/"+toString(log(B))
+log(C/A)/log(B)→X
+ANS "X="+toString(X)
+SHOW "CHECK: "+toString(A)+"*"+toString(B)+"^X="+toString(AB^X)
+Goto Z
+
+# ---------------------------------------------------------------- radicals
+Lbl A6
+ClrHome
+0→θ
+Disp "SIMPLIFY √(N)"
+Prompt N
+If N<1 or fPart(N)
+Disp "N MUST BE A","POSITIVE WHOLE NUMBER"
+If N<1 or fPart(N)
+Goto Z
+ClrHome
+ANS "== SIMPLIFY RADICAL =="
+iPart(√(N))→K
+While fPart(N/K²)
+  K-1→K
+End
+N/K²→M
+SHOW "BIGGEST PERFECT SQUARE"
+SHOW "FACTOR OF "+toString(N)+" IS "+toString(K²)
+SHOW "√("+toString(N)+")=√("+toString(K²)+")*√("+toString(M)+")"
+If M=1
+Then
+  ANS "√("+toString(N)+")="+toString(K)
+Else
+  If K=1
+  Then
+    ANS "ALREADY SIMPLEST: √("+toString(N)+")"
+  Else
+    ANS "√("+toString(N)+")="+toString(K)+"√("+toString(M)+")"
+  End
+End
+ANS "DECIMAL: "+toString(√(N))
+Goto Z
+
+# ================================================================ NUMBERS + CODE
+Lbl N
+Menu("NUMBERS + CODE","GCD/LCM (EUCLID)",N1,"PRIME FACTORS",N2,"BASE CONVERTER",N3,"BITWISE OPS",N4,"FRACTION MATH",N5,"SEQUENCES",N6,"BACK",M)
+
+# ---------------------------------------------------------------- Euclid
+Lbl N1
+ClrHome
+0→θ
+Disp "GCD + LCM OF A AND B"
+Prompt A,B
+If A<1 or B<1 or fPart(A) or fPart(B)
+Disp "USE POSITIVE WHOLE NUMBERS"
+If A<1 or B<1 or fPart(A) or fPart(B)
+Goto Z
+ClrHome
+ANS "== EUCLIDEAN ALGORITHM =="
+max(A,B)→C
+min(A,B)→D
+SHOW "DIVIDE, KEEP THE REMAINDER:"
+While D
+  iPart(C/D)→Q
+  C-DQ→R
+  SHOW toString(C)+"="+toString(D)+"*"+toString(Q)+"+"+toString(R)
+  D→C
+  R→D
+End
+SHOW "REMAINDER HIT 0, SO THE"
+SHOW "LAST DIVISOR IS THE GCD"
+ANS "GCD="+toString(C)
+SHOW "LCM=A*B/GCD="+toString(AB)+"/"+toString(C)
+ANS "LCM="+toString(AB/C)
+If C=1
+Then
+  ANS "(COPRIME: GCD IS 1)"
+End
+Goto Z
+
+# ---------------------------------------------------------------- prime factors
+Lbl N2
+ClrHome
+0→θ
+Disp "PRIME FACTORIZE N"
+Prompt N
+If N<2 or fPart(N)
+Disp "N MUST BE A WHOLE","NUMBER ≥ 2"
+If N<2 or fPart(N)
+Goto Z
+ClrHome
+ANS "== PRIME FACTORS =="
+SHOW "TRY DIVIDING BY 2,3,5,7..."
+N→M
+""→Str1
+1→T
+2→D
+While D²≤M
+  0→E
+  While not(fPart(M/D))
+    SHOW toString(M)+"/"+toString(D)+"="+toString(M/D)
+    M/D→M
+    E+1→E
+  End
+  If E
+  Then
+    Str1+"*"+toString(D)→Str1
+    If E>1
+    Str1+"^"+toString(E)→Str1
+    T(E+1)→T
+  End
+  D+1+(D>2)→D
+End
+If M>1
+Then
+  SHOW toString(M)+" IS PRIME, KEEP IT"
+  Str1+"*"+toString(M)→Str1
+  2T→T
+End
+sub(Str1,2,length(Str1)-1)→Str1
+ANS toString(N)+"="+Str1
+If T=2
+Then
+  ANS toString(N)+" IS PRIME!"
+Else
+  ANS "COMPOSITE WITH "+toString(T)+" DIVISORS"
+End
+Goto Z
+
+# ---------------------------------------------------------------- bases
+Lbl N3
+Menu("BASE CONVERTER","DEC TO BASE B",N7,"BASE B TO DEC",N8,"BACK",N)
+
+Lbl N7
+ClrHome
+0→θ
+Disp "DECIMAL N TO BASE B","B=2 BINARY, 8 OCTAL,","16 HEX (UP TO 36)"
+Prompt N,B
+If N<0 or fPart(N) or B<2 or B>36 or fPart(B)
+Disp "N: WHOLE NUMBER ≥ 0","B: 2 TO 36"
+If N<0 or fPart(N) or B<2 or B>36 or fPart(B)
+Goto Z
+ClrHome
+ANS "== DECIMAL TO BASE "+toString(B)+" =="
+"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"→Str2
+""→Str1
+N→M
+SHOW "DIVIDE BY "+toString(B)+", KEEP REMAINDERS"
+Repeat not(M)
+  iPart(M/B)→Q
+  M-BQ→R
+  SHOW toString(M)+"/"+toString(B)+"="+toString(Q)+" R "+sub(Str2,R+1,1)
+  sub(Str2,R+1,1)+Str1→Str1
+  Q→M
+End
+SHOW "READ REMAINDERS BOTTOM-UP:"
+ANS toString(N)+" = "+Str1+" (BASE "+toString(B)+")"
+Goto Z
+
+Lbl N8
+ClrHome
+0→θ
+Disp "BASE B NUMBER TO DECIMAL","(USE ALPHA FOR A-Z)"
+Input "NUMBER: ",Str1
+Prompt B
+If B<2 or B>36 or fPart(B)
+Disp "B: 2 TO 36"
+If B<2 or B>36 or fPart(B)
+Goto Z
+ClrHome
+ANS "== BASE "+toString(B)+" TO DECIMAL =="
+"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"→Str2
+length(Str1)→L
+0→N
+0→F
+SHOW "DIGIT * B^PLACE, THEN ADD"
+For(I,1,L)
+  inString(Str2,sub(Str1,I,1))-1→E
+  If E<0 or E≥B
+  Then
+    1→F
+  Else
+    L-I→P
+    N+EB^P→N
+    SHOW sub(Str1,I,1)+"*"+toString(B)+"^"+toString(P)+"="+toString(EB^P)
+  End
+End
+If F
+Then
+  ANS "BAD DIGIT FOR BASE "+toString(B)+"!"
+Else
+  ANS Str1+" (BASE "+toString(B)+") = "+toString(N)
+End
+Goto Z
+
+# ---------------------------------------------------------------- bitwise
+Lbl N4
+ClrHome
+0→θ
+Disp "BITWISE OPS ON A AND B","(WHOLE NUMBERS)"
+Prompt A,B
+If A<0 or B<0 or fPart(A) or fPart(B)
+Disp "USE WHOLE NUMBERS ≥ 0"
+If A<0 or B<0 or fPart(A) or fPart(B)
+Goto Z
+ClrHome
+ANS "== BITWISE =="
+A→C
+B→D
+""→Str1
+""→Str2
+""→Str3
+""→Str4
+""→Str5
+0→P
+0→Q
+0→R
+1→T
+# Peel off one bit at a time (lowest bit first)
+Repeat not(C or D)
+  C-2iPart(C/2)→E
+  D-2iPart(D/2)→F
+  sub("01",E+1,1)+Str1→Str1
+  sub("01",F+1,1)+Str2→Str2
+  sub("01",(E and F)+1,1)+Str3→Str3
+  sub("01",(E or F)+1,1)+Str4→Str4
+  sub("01",(E xor F)+1,1)+Str5→Str5
+  P+T(E and F)→P
+  Q+T(E or F)→Q
+  R+T(E xor F)→R
+  2T→T
+  iPart(C/2)→C
+  iPart(D/2)→D
+End
+ANS "A  ="+Str1+" ("+toString(A)+")"
+ANS "B  ="+Str2+" ("+toString(B)+")"
+ANS "AND="+Str3+" ("+toString(P)+")"
+ANS "OR ="+Str4+" ("+toString(Q)+")"
+ANS "XOR="+Str5+" ("+toString(R)+")"
+SHOW "AND: 1 IF BOTH BITS ARE 1"
+SHOW "OR : 1 IF EITHER BIT IS 1"
+SHOW "XOR: 1 IF BITS DIFFER"
+ANS "A<<1="+toString(2A)+"  A>>1="+toString(iPart(A/2))
+Goto Z
+
+# ---------------------------------------------------------------- fractions
+Lbl N5
+ClrHome
+0→θ
+Disp "(A/B) OP (C/D)"
+Prompt A,B,C,D
+If B=0 or D=0 or fPart(A) or fPart(B) or fPart(C) or fPart(D)
+Disp "WHOLE NUMBERS ONLY AND","NO ZERO DENOMINATORS"
+If B=0 or D=0 or fPart(A) or fPart(B) or fPart(C) or fPart(D)
+Goto Z
+Menu("OPERATION","ADD +",F1,"SUBTRACT -",F2,"MULTIPLY *",F3,"DIVIDE /",F4)
+
+Lbl F1
+ClrHome
+0→θ
+ANS "== ADD FRACTIONS =="
+SHOW "COMMON DENOMINATOR:"
+SHOW toString(B)+"*"+toString(D)+"="+toString(BD)
+SHOW "NEW TOP: A*D+C*B"
+SHOW "="+toString(AD)+"+"+toString(CB)
+AD+CB→N
+BD→E
+Goto F5
+
+Lbl F2
+ClrHome
+0→θ
+ANS "== SUBTRACT FRACTIONS =="
+SHOW "COMMON DENOMINATOR:"
+SHOW toString(B)+"*"+toString(D)+"="+toString(BD)
+SHOW "NEW TOP: A*D-C*B"
+SHOW "="+toString(AD)+"-"+toString(CB)
+AD-CB→N
+BD→E
+Goto F5
+
+Lbl F3
+ClrHome
+0→θ
+ANS "== MULTIPLY FRACTIONS =="
+SHOW "MULTIPLY STRAIGHT ACROSS:"
+SHOW "TOP: "+toString(A)+"*"+toString(C)+"="+toString(AC)
+SHOW "BOTTOM: "+toString(B)+"*"+toString(D)+"="+toString(BD)
+AC→N
+BD→E
+Goto F5
+
+Lbl F4
+ClrHome
+0→θ
+If C=0
+Disp "CANNOT DIVIDE BY ZERO!"
+If C=0
+Goto Z
+ANS "== DIVIDE FRACTIONS =="
+SHOW "KEEP, CHANGE, FLIP:"
+SHOW toString(A)+"/"+toString(B)+" * "+toString(D)+"/"+toString(C)
+SHOW "TOP: "+toString(A)+"*"+toString(D)+"="+toString(AD)
+SHOW "BOTTOM: "+toString(B)+"*"+toString(C)+"="+toString(BC)
+AD→N
+BC→E
+Goto F5
+
+Lbl F5
+SHOW "BEFORE SIMPLIFYING: "+toString(N)+"/"+toString(E)
+N→U
+E→V
+prgmZMPFRAC
+SHOW "DIVIDE TOP+BOTTOM BY GCD="+toString(W)
+ANS "ANSWER: "+Str9
+If abs(U)>V and V≠1
+Then
+  ANS "MIXED: "+toString(iPart(U/V))+" "+toString(abs(U-ViPart(U/V)))+"/"+toString(V)
+End
+ANS "DECIMAL: "+toString(N/E)
+Goto Z
+
+# ---------------------------------------------------------------- sequences
+Lbl N6
+Menu("SEQUENCES","ARITHMETIC",Q1,"GEOMETRIC",Q2,"FIBONACCI",Q3,"COLLATZ (3N+1)",Q4,"BACK",N)
+
+Lbl Q1
+ClrHome
+0→θ
+Disp "A=FIRST TERM","D=COMMON DIFFERENCE","N=WHICH TERM"
+Prompt A,D,N
+ClrHome
+ANS "== ARITHMETIC =="
+SHOW "TERMS: "+toString(A)+", "+toString(A+D)+", "+toString(A+2D)+", "+toString(A+3D)+"..."
+SHOW "AN=A1+(N-1)D"
+SHOW "="+toString(A)+"+("+toString(N)+"-1)("+toString(D)+")"
+A+(N-1)D→T
+ANS "TERM "+toString(N)+" = "+toString(T)
+SHOW "SUM=N(A1+AN)/2"
+SHOW "="+toString(N)+"("+toString(A)+"+"+toString(T)+")/2"
+ANS "SUM OF "+toString(N)+" TERMS = "+toString(N(A+T)/2)
+Goto Z
+
+Lbl Q2
+ClrHome
+0→θ
+Disp "A=FIRST TERM","R=COMMON RATIO","N=WHICH TERM"
+Prompt A,R,N
+ClrHome
+ANS "== GEOMETRIC =="
+SHOW "TERMS: "+toString(A)+", "+toString(AR)+", "+toString(AR²)+", "+toString(AR³)+"..."
+SHOW "AN=A1*R^(N-1)"
+SHOW "="+toString(A)+"*"+toString(R)+"^"+toString(N-1)
+AR^(N-1)→T
+ANS "TERM "+toString(N)+" = "+toString(T)
+If R=1
+Then
+  ANS "SUM OF "+toString(N)+" TERMS = "+toString(NA)
+Else
+  SHOW "SUM=A1(1-R^N)/(1-R)"
+  ANS "SUM OF "+toString(N)+" TERMS = "+toString(A(1-R^N)/(1-R))
+End
+If abs(R)<1
+Then
+  SHOW "ABS(R)<1 SO THE INFINITE"
+  SHOW "SUM CONVERGES TO A1/(1-R)"
+  ANS "INFINITE SUM = "+toString(A/(1-R))
+End
+Goto Z
+
+Lbl Q3
+ClrHome
+0→θ
+Disp "FIBONACCI UP TO TERM N"
+Prompt N
+If N<1 or N>400 or fPart(N)
+Disp "N: 1 TO 400"
+If N<1 or N>400 or fPart(N)
+Goto Z
+ClrHome
+ANS "== FIBONACCI =="
+SHOW "EACH TERM = SUM OF LAST 2"
+0→A
+1→B
+SHOW "F1=1"
+For(I,2,N)
+  A+B→C
+  SHOW "F"+toString(I)+"="+toString(A)+"+"+toString(B)+"="+toString(C)
+  B→A
+  C→B
+End
+ANS "F"+toString(N)+" = "+toString(B)
+If N>2
+Then
+  ANS "F"+toString(N)+"/F"+toString(N-1)+" = "+toString(B/A)
+  ANS "GOLDEN RATIO = "+toString((1+√(5))/2)
+End
+Goto Z
+
+Lbl Q4
+ClrHome
+0→θ
+Disp "COLLATZ: IF EVEN N/2,","IF ODD 3N+1, UNTIL 1"
+Prompt N
+If N<1 or fPart(N)
+Disp "N: WHOLE NUMBER ≥ 1"
+If N<1 or fPart(N)
+Goto Z
+ClrHome
+ANS "== COLLATZ =="
+N→M
+0→S
+N→H
+While M≠1
+  If fPart(M/2)
+  Then
+    SHOW toString(M)+" ODD: 3N+1="+toString(3M+1)
+    3M+1→M
+  Else
+    SHOW toString(M)+" EVEN: N/2="+toString(M/2)
+    M/2→M
+  End
+  S+1→S
+  max(H,M)→H
+End
+ANS "REACHED 1 IN "+toString(S)+" STEPS"
+ANS "HIGHEST VALUE: "+toString(H)
+Goto Z
+
+# ================================================================ GEOMETRY + TRIG
+Lbl G
+Degree
+Menu("GEOMETRY + TRIG","RIGHT TRIANGLE",G1,"TRIANGLE: SSS",G2,"TRIANGLE: SAS",G3,"TRIANGLE ASA/AAS",G4,"2 POINTS + LINE",G5,"CIRCLES + SOLIDS",G6,"BACK",M)
+
+# ---------------------------------------------------------------- right triangle
+Lbl G1
+ClrHome
+0→θ
+Disp "LEGS A,B  HYPOTENUSE C","TYPE 0 FOR THE UNKNOWN"
+Prompt A,B,C
+(A=0)+(B=0)+(C=0)→N
+If N≠1 or A<0 or B<0 or C<0
+Disp "NEED EXACTLY ONE 0"
+If N≠1 or A<0 or B<0 or C<0
+Goto Z
+If C and (A≥C or B≥C)
+Disp "HYPOTENUSE MUST BE","THE LONGEST SIDE"
+If C and (A≥C or B≥C)
+Goto Z
+ClrHome
+ANS "== RIGHT TRIANGLE =="
+SHOW "PYTHAGORAS: A²+B²=C²"
+If not(C)
+Then
+  √(A²+B²)→C
+  SHOW "C=√(A²+B²)"
+  SHOW "=√("+toString(A²)+"+"+toString(B²)+")"
+End
+If not(A)
+Then
+  √(C²-B²)→A
+  SHOW "A=√(C²-B²)"
+  SHOW "=√("+toString(C²)+"-"+toString(B²)+")"
+End
+If not(B)
+Then
+  √(C²-A²)→B
+  SHOW "B=√(C²-A²)"
+  SHOW "=√("+toString(C²)+"-"+toString(A²)+")"
+End
+ANS "A="+toString(A)+"  B="+toString(B)
+ANS "C="+toString(C)
+SHOW "ANGLES WITH SOH CAH TOA:"
+SHOW "ANGLE A=ARCTAN(A/B)"
+tan⁻¹(A/B)→D
+ANS "ANGLE A="+toString(D)+"°"
+ANS "ANGLE B=90-A="+toString(90-D)+"°"
+SHOW "SIN(A)=A/C="+toString(A/C)
+SHOW "COS(A)=B/C="+toString(B/C)
+SHOW "AREA=A*B/2"
+ANS "AREA="+toString(AB/2)
+ANS "PERIMETER="+toString(A+B+C)
+Goto Z
+
+# ---------------------------------------------------------------- SSS
+Lbl G2
+ClrHome
+0→θ
+Disp "SIDES A,B,C"
+Prompt A,B,C
+If min({A,B,C})≤0 or A+B≤C or A+C≤B or B+C≤A
+Disp "NOT A TRIANGLE!","(TRIANGLE INEQUALITY)"
+If min({A,B,C})≤0 or A+B≤C or A+C≤B or B+C≤A
+Goto Z
+ClrHome
+ANS "== SSS TRIANGLE =="
+SHOW "LAW OF COSINES:"
+SHOW "COS(A)=(B²+C²-A²)/(2BC)"
+(B²+C²-A²)/(2BC)→P
+SHOW "=("+toString(B²)+"+"+toString(C²)+"-"+toString(A²)+")/"+toString(2BC)
+SHOW "="+toString(P)
+cos⁻¹(P)→D
+SHOW "ANGLE A=ARCCOS("+toString(P)+")"
+(A²+C²-B²)/(2AC)→Q
+SHOW "COS(B)=(A²+C²-B²)/(2AC)"
+SHOW "="+toString(Q)
+cos⁻¹(Q)→E
+SHOW "ANGLE C=180-A-B"
+180-D-E→F
+Goto GT
+
+# ---------------------------------------------------------------- SAS
+Lbl G3
+ClrHome
+0→θ
+Disp "2 SIDES + ANGLE BETWEEN","(ANGLE A IS BETWEEN","SIDES B AND C)"
+Input "SIDE B=",B
+Input "SIDE C=",C
+Input "ANGLE A=",D
+If B≤0 or C≤0 or D≤0 or D≥180
+Disp "SIDES>0, 0<ANGLE<180"
+If B≤0 or C≤0 or D≤0 or D≥180
+Goto Z
+ClrHome
+ANS "== SAS TRIANGLE =="
+SHOW "LAW OF COSINES:"
+SHOW "A²=B²+C²-2BC*COS(A)"
+SHOW "="+toString(B²)+"+"+toString(C²)+"-"+toString(2BCcos(D))
+√(B²+C²-2BCcos(D))→A
+SHOW "A=√("+toString(A²)+")="+toString(A)
+(A²+C²-B²)/(2AC)→Q
+SHOW "COS(B)=(A²+C²-B²)/(2AC)"
+SHOW "="+toString(Q)
+cos⁻¹(Q)→E
+SHOW "ANGLE C=180-A-B"
+180-D-E→F
+Goto GT
+
+# ---------------------------------------------------------------- ASA / AAS
+Lbl G4
+ClrHome
+0→θ
+Disp "2 ANGLES + 1 SIDE","(SIDE C IS OPPOSITE","ANGLE C)"
+Input "ANGLE A=",D
+Input "ANGLE B=",E
+Input "SIDE C=",C
+If D≤0 or E≤0 or D+E≥180 or C≤0
+Disp "ANGLES>0, A+B<180,","SIDE>0"
+If D≤0 or E≤0 or D+E≥180 or C≤0
+Goto Z
+ClrHome
+ANS "== ASA/AAS TRIANGLE =="
+180-D-E→F
+SHOW "ANGLE C=180-A-B="+toString(F)
+SHOW "LAW OF SINES:"
+SHOW "A/SIN(A)=B/SIN(B)=C/SIN(C)"
+Csin(D)/sin(F)→A
+SHOW "A=C*SIN(A)/SIN(C)="+toString(A)
+Csin(E)/sin(F)→B
+SHOW "B=C*SIN(B)/SIN(C)="+toString(B)
+Goto GT
+
+# ---------------------------------------------------------------- triangle summary
+# Sides A,B,C and angles D,E,F (degrees) are set by G2/G3/G4
+Lbl GT
+ANS "SIDES: A="+toString(round(A,4))+" B="+toString(round(B,4))+" C="+toString(round(C,4))
+ANS "ANGLES: A="+toString(round(D,4))+"° B="+toString(round(E,4))+"° C="+toString(round(F,4))+"°"
+SHOW "AREA=A*B*SIN(C)/2"
+ANS "AREA="+toString(ABsin(F)/2)
+ANS "PERIMETER="+toString(A+B+C)
+(A=B)+(B=C)+(A=C)→N
+"SCALENE"→Str1
+If N=1
+"ISOSCELES"→Str1
+If N=3
+"EQUILATERAL"→Str1
+max({D,E,F})→M
+If abs(M-90)<1ᴇ⁻8
+Then
+  "RIGHT"→Str2
+Else
+  If M>90
+  Then
+    "OBTUSE"→Str2
+  Else
+    "ACUTE"→Str2
+  End
+End
+ANS "TYPE: "+Str2+" "+Str1
+Pause
+Menu("DRAW IT?","YES",GD,"NO, MAIN MENU",M)
+Lbl GD
+# Put corner C at (0,0), corner B at (A,0), corner A above them
+Bcos(F)→P
+Bsin(F)→Q
+min(0,P)→G
+max(A,P)→H
+1.3max(H-G,265Q/165)→S
+(G+H)/2→I
+Q/2→J
+FnOff
+PlotsOff
+AxesOff
+GridOff
+LabelOff
+⁻1ᴇ90→Xmin
+I+S/2→Xmax
+I-S/2→Xmin
+⁻1ᴇ90→Ymin
+J+165S/530→Ymax
+J-165S/530→Ymin
+ClrDraw
+Line(0,0,A,0,1,BLUE)
+Line(P,Q,0,0,1,GREEN)
+Line(A,0,P,Q,1,RED)
+TextColor(BLACK)
+Text(min(150,iPart(Ymax/ΔY)+3),max(0,iPart(⁻Xmin/ΔX)-10),"C")
+Text(min(150,iPart(Ymax/ΔY)+3),min(255,iPart((A-Xmin)/ΔX)+4),"B")
+Text(max(0,iPart((Ymax-Q)/ΔY)-16),iPart((P-Xmin)/ΔX),"A")
+TextColor(BLUE)
+Text(1,2,"A="+toString(round(A,3)))
+TextColor(GREEN)
+Text(14,2,"B="+toString(round(B,3)))
+TextColor(RED)
+Text(27,2,"C="+toString(round(C,3)))
+Goto Z
+
+# ---------------------------------------------------------------- two points
+Lbl G5
+ClrHome
+0→θ
+Disp "POINT 1 = (A,B)","POINT 2 = (C,D)"
+Prompt A,B,C,D
+If A=C and B=D
+Disp "THOSE ARE THE SAME POINT"
+If A=C and B=D
+Goto Z
+ClrHome
+ANS "== TWO POINTS =="
+not(fPart(A) or fPart(B) or fPart(C) or fPart(D))→I
+C-A→H
+D-B→K
+SHOW "RUN="+toString(H)+"  RISE="+toString(K)
+SHOW "DISTANCE=√(RUN²+RISE²)"
+H²+K²→S
+SHOW "=√("+toString(H²)+"+"+toString(K²)+")"
+ANS "DISTANCE="+toString(√(S))
+If I and fPart(√(S))
+Then
+  iPart(√(S))→G
+  While fPart(S/G²)
+    G-1→G
+  End
+  If G>1
+  Then
+    ANS "EXACT: "+toString(G)+"√("+toString(S/G²)+")"
+  Else
+    ANS "EXACT: √("+toString(S)+")"
+  End
+End
+SHOW "MIDPOINT=AVERAGE X AND Y"
+ANS "MIDPOINT=("+toString((A+C)/2)+","+toString((B+D)/2)+")"
+If H=0
+Then
+  ANS "SLOPE UNDEFINED"
+  ANS "VERTICAL LINE: X="+toString(A)
+Else
+  K/H→M
+  SHOW "SLOPE=RISE/RUN="+toString(K)+"/"+toString(H)
+  ANS "SLOPE="+toString(M)
+  If I and fPart(M)
+  Then
+    K→U
+    H→V
+    prgmZMPFRAC
+    ANS "EXACT SLOPE="+Str9
+  End
+  B-MA→P
+  SHOW "Y-INT B=Y1-M*X1="+toString(P)
+  ANS "LINE: Y="+toString(M)+"X+"+toString(P)
+  If M≠0
+  Then
+    ANS "PERPENDICULAR SLOPE="+toString(⁻1/M)
+  End
+  ANS "ANGLE WITH X-AXIS="+toString(tan⁻¹(M))+"°"
+End
+Goto Z
+
+# ---------------------------------------------------------------- circles + solids
+Lbl G6
+ClrHome
+0→θ
+Disp "RADIUS R, HEIGHT H","(H=0 FOR CIRCLE/SPHERE)"
+Prompt R,H
+If R≤0 or H<0
+Disp "NEED R>0 AND H≥0"
+If R≤0 or H<0
+Goto Z
+ClrHome
+ANS "== CIRCLE =="
+SHOW "AREA=πR²="+toString(R²)+"π"
+ANS "AREA="+toString(πR²)
+SHOW "CIRCUMFERENCE=2πR="+toString(2R)+"π"
+ANS "CIRCUMFERENCE="+toString(2πR)
+ANS "== SPHERE =="
+SHOW "VOLUME=(4/3)πR³"
+ANS "VOLUME="+toString(4πR³/3)
+SHOW "SURFACE=4πR²"
+ANS "SURFACE="+toString(4πR²)
+If H>0
+Then
+  ANS "== CYLINDER =="
+  SHOW "VOLUME=πR²H="+toString(R²H)+"π"
+  ANS "VOLUME="+toString(πR²H)
+  SHOW "SURFACE=2πR²+2πRH"
+  ANS "SURFACE="+toString(2πR²+2πRH)
+  ANS "== CONE =="
+  √(R²+H²)→L
+  SHOW "SLANT L=√(R²+H²)="+toString(L)
+  SHOW "VOLUME=πR²H/3"
+  ANS "VOLUME="+toString(πR²H/3)
+  SHOW "SURFACE=πR²+πRL"
+  ANS "SURFACE="+toString(πR²+πRL)
+End
+Goto Z
+
+# ================================================================ CALCULUS
+Lbl C
+Radian
+Menu("CALCULUS","DERIVATIVE",C1,"INTEGRAL + AREA",C2,"RIEMANN SUMS",C3,"NEWTONS METHOD",C4,"LIMIT TABLE",C5,"BACK",M)
+
+# ---------------------------------------------------------------- derivative
+Lbl C1
+ClrHome
+0→θ
+Disp "DERIVATIVE OF F AT X=A","(USE X,T,θ,n FOR X)"
+Input "F(X)=",Str1
+String►Equ(Str1,Y₁)
+Prompt A
+ClrHome
+ANS "== DERIVATIVE =="
+ANS "F(X)="+Str1
+Y₁(A)→F
+SHOW "F("+toString(A)+")="+toString(F)
+SHOW "SLOPE OF SECANT LINES"
+SHOW "(F(A+H)-F(A))/H AS H GOES TO 0:"
+For(I,1,4)
+  10^(⁻I)→H
+  SHOW "H="+toString(H)+": "+toString((Y₁(A+H)-F)/H)
+End
+nDeriv(Y₁,X,A)→M
+ANS "F'("+toString(A)+")="+toString(M)
+SHOW "TANGENT: Y=F(A)+F'(A)(X-A)"
+F-MA→B
+ANS "TANGENT: Y="+toString(M)+"X+"+toString(B)
+(Y₁(A+.001)-2F+Y₁(A-.001))/.000001→S
+ANS "F''("+toString(A)+")="+toString(round(S,4))
+If abs(S)<.0001
+Then
+  SHOW "F''=0: POSSIBLE INFLECTION"
+Else
+  If S>0
+  Then
+    SHOW "F''>0: CONCAVE UP"
+  Else
+    SHOW "F''<0: CONCAVE DOWN"
+  End
+End
+If abs(M)<.000001
+Then
+  ANS "F'=0: CRITICAL POINT!"
+End
+Pause
+Menu("GRAPH IT?","YES",C6,"NO, MAIN MENU",M)
+Lbl C6
+A-5→U
+A+5→V
+prgmZMPGRAPH
+DrawF MX+B,RED
+Pt-On(A,F,2,GREEN)
+TextColor(RED)
+Text(1,2,"TANGENT LINE")
+Goto Z
+
+# ---------------------------------------------------------------- integral
+Lbl C2
+ClrHome
+0→θ
+Disp "INTEGRAL OF F","FROM X=A TO X=B"
+Input "F(X)=",Str1
+String►Equ(Str1,Y₁)
+Prompt A,B
+If A=B
+Disp "A AND B MUST DIFFER"
+If A=B
+Goto Z
+ClrHome
+ANS "== INTEGRAL =="
+ANS "F(X)="+Str1
+SHOW "FROM X="+toString(A)+" TO X="+toString(B)
+fnInt(Y₁,X,A,B)→I
+ANS "INTEGRAL="+toString(I)
+SHOW "(AREA ABOVE AXIS COUNTS +,"
+SHOW " AREA BELOW AXIS COUNTS -)"
+fnInt(abs(Y₁),X,A,B)→T
+ANS "TOTAL SHADED AREA="+toString(abs(T))
+SHOW "AVERAGE VALUE=INTEGRAL/(B-A)"
+ANS "AVERAGE VALUE="+toString(I/(B-A))
+Pause
+Menu("GRAPH IT?","YES",C7,"NO, MAIN MENU",M)
+Lbl C7
+min(A,B)-abs(B-A)/4→U
+max(A,B)+abs(B-A)/4→V
+prgmZMPGRAPH
+Shade(0,Y₁,min(A,B),max(A,B))
+Shade(Y₁,0,min(A,B),max(A,B))
+Goto Z
+
+# ---------------------------------------------------------------- Riemann sums
+Lbl C3
+ClrHome
+0→θ
+Disp "RIEMANN SUMS OF F","FROM A TO B, N PIECES"
+Input "F(X)=",Str1
+String►Equ(Str1,Y₁)
+Prompt A,B,N
+If A=B or N<1 or fPart(N)
+Disp "A≠B, N=WHOLE NUMBER ≥ 1"
+If A=B or N<1 or fPart(N)
+Goto Z
+ClrHome
+ANS "== RIEMANN SUMS =="
+(B-A)/N→H
+SHOW "WIDTH=(B-A)/N="+toString(H)
+0→L
+0→R
+0→P
+0→S
+For(I,0,N-1)
+  Y₁(A+IH)→E
+  Y₁(A+(I+1)H)→F
+  L+E→L
+  R+F→R
+  P+Y₁(A+(I+.5)H)→P
+  S+E((I=0)+(I≠0)(2+2fPart(I/2)/.5))→S
+  If N≤8
+  Then
+    SHOW "F("+toString(A+IH)+")="+toString(E)
+  End
+End
+S+Y₁(B)→S
+HL→L
+HR→R
+HP→P
+(L+R)/2→T
+SHOW "LEFT=WIDTH*SUM(LEFT F)"
+ANS "LEFT SUM  ="+toString(L)
+ANS "RIGHT SUM ="+toString(R)
+ANS "MIDPOINT  ="+toString(P)
+ANS "TRAPEZOID ="+toString(T)
+If not(fPart(N/2))
+Then
+  SHOW "SIMPSON=(W/3)(F0+4F1+2F2..)"
+  ANS "SIMPSON   ="+toString(HS/3)
+End
+ANS "EXACT     ="+toString(fnInt(Y₁,X,A,B))
+Pause
+Menu("DRAW RECTANGLES?","YES",C8,"NO, MAIN MENU",M)
+Lbl C8
+min(A,B)-abs(B-A)/4→U
+max(A,B)+abs(B-A)/4→V
+prgmZMPGRAPH
+# Midpoint rectangles (only up to 60 so it stays fast)
+For(I,0,min(N,60)-1)
+  A+IH→E
+  Y₁(E+H/2)→F
+  Line(E,0,E,F,1,RED)
+  Line(E,F,E+H,F,1,RED)
+  Line(E+H,F,E+H,0,1,RED)
+End
+TextColor(RED)
+Text(1,2,"MIDPOINT RECTANGLES")
+Goto Z
+
+# ---------------------------------------------------------------- Newton
+Lbl C4
+ClrHome
+0→θ
+Disp "NEWTONS METHOD","FINDS X WHERE F(X)=0"
+Input "F(X)=",Str1
+String►Equ(Str1,Y₁)
+Input "FIRST GUESS X0=",G
+ClrHome
+ANS "== NEWTONS METHOD =="
+SHOW "XNEW = X - F(X)/F'(X)"
+0→N
+1→D
+Repeat abs(Y₁(G))<1ᴇ⁻10 or N≥30 or D=0
+  nDeriv(Y₁,X,G)→D
+  If D≠0
+  Then
+    G-Y₁(G)/D→P
+    SHOW "X"+toString(N+1)+"="+toString(G)+"-"+toString(Y₁(G))+"/"+toString(D)
+    SHOW "  ="+toString(P)
+    P→G
+  End
+  N+1→N
+End
+If D=0
+Then
+  ANS "F'(X)=0: TRY A NEW GUESS"
+Else
+  If abs(Y₁(G))<1ᴇ⁻6
+  Then
+    ANS "ROOT: X="+toString(G)
+    ANS "F(X)="+toString(Y₁(G))
+    ANS "FOUND IN "+toString(N)+" STEPS"
+  Else
+    ANS "DID NOT CONVERGE"
+    ANS "TRY A DIFFERENT GUESS"
+  End
+End
+Pause
+Menu("GRAPH IT?","YES",C9,"NO, MAIN MENU",M)
+Lbl C9
+G-5→U
+G+5→V
+prgmZMPGRAPH
+Pt-On(G,0,3,RED)
+TextColor(RED)
+Text(1,2,"X = ROOT FOUND")
+Goto Z
+
+# ---------------------------------------------------------------- limits
+Lbl C5
+ClrHome
+0→θ
+Disp "LIMIT OF F AS X GOES TO A"
+Input "F(X)=",Str1
+String►Equ(Str1,Y₁)
+Prompt A
+ClrHome
+ANS "== LIMIT TABLE =="
+SHOW "FROM THE LEFT:"
+For(I,1,4)
+  A-10^(⁻I)→X
+  SHOW "F("+toString(X)+")="+toString(Y₁(X))
+End
+SHOW "FROM THE RIGHT:"
+For(I,1,4)
+  A+10^(⁻I)→X
+  SHOW "F("+toString(X)+")="+toString(Y₁(X))
+End
+Y₁(A-1ᴇ⁻6)→L
+Y₁(A+1ᴇ⁻6)→R
+If abs(L-R)<.001(1+abs(L))
+Then
+  ANS "LIMIT IS ABOUT "+toString(round((L+R)/2,5))
+Else
+  ANS "LEFT AND RIGHT DISAGREE:"
+  ANS "LIMIT DOES NOT EXIST"
+End
+Goto Z
+
+# ================================================================ STATS + MONEY
+Lbl S
+Menu("STATS + MONEY","1-VARIABLE STATS",S1,"LINE OF BEST FIT",S2,"PERMS + COMBOS",S3,"INTEREST",S4,"PERCENT CHANGE",S5,"LOAN PAYMENT",S6,"BACK",M)
+
+# ---------------------------------------------------------------- 1-var stats
+Lbl S1
+ClrHome
+0→θ
+Disp "TYPE DATA AS A LIST","LIKE {3,5,8,10}"
+Input "DATA: ",ʟMPT
+dim(ʟMPT)→N
+ClrHome
+ANS "== 1-VARIABLE STATS =="
+sum(ʟMPT)→S
+SHOW "N="+toString(N)+"  SUM="+toString(S)
+S/N→M
+SHOW "MEAN=SUM/N="+toString(S)+"/"+toString(N)
+ANS "MEAN="+toString(M)
+SortA(ʟMPT)
+ANS "MEDIAN="+toString(median(ʟMPT))
+ANS "MIN="+toString(ʟMPT(1))+"  MAX="+toString(ʟMPT(N))
+ANS "RANGE="+toString(ʟMPT(N)-ʟMPT(1))
+sum((ʟMPT-M)²)→Q
+SHOW "SUM OF (X-MEAN)²="+toString(Q)
+SHOW "POP SD=√(THAT/N)"
+ANS "POPULATION SD="+toString(√(Q/N))
+If N>1
+Then
+  SHOW "SAMPLE SD=√(THAT/(N-1))"
+  ANS "SAMPLE SD="+toString(√(Q/(N-1)))
+End
+Goto Z
+
+# ---------------------------------------------------------------- regression
+Lbl S2
+ClrHome
+0→θ
+Disp "TYPE X AND Y AS LISTS","LIKE {1,2,3,4}"
+Input "X: ",ʟMPT
+Input "Y: ",ʟMPU
+If dim(ʟMPT)≠dim(ʟMPU) or dim(ʟMPT)<2
+Disp "LISTS MUST BE THE SAME","LENGTH (2 OR MORE)"
+If dim(ʟMPT)≠dim(ʟMPU) or dim(ʟMPT)<2
+Goto Z
+ClrHome
+ANS "== LINEAR REGRESSION =="
+dim(ʟMPT)→N
+mean(ʟMPT)→P
+mean(ʟMPU)→Q
+SHOW "MEAN X="+toString(P)+" MEAN Y="+toString(Q)
+sum((ʟMPT-P)(ʟMPU-Q))→S
+sum((ʟMPT-P)²)→T
+sum((ʟMPU-Q)²)→U
+SHOW "SXY=SUM((X-MX)(Y-MY))="+toString(S)
+SHOW "SXX=SUM((X-MX)²)="+toString(T)
+If T=0
+Disp "ALL X VALUES ARE THE SAME"
+If T=0
+Goto Z
+S/T→M
+SHOW "SLOPE M=SXY/SXX"
+ANS "M="+toString(M)
+Q-MP→B
+SHOW "B=MEAN Y - M*MEAN X"
+ANS "B="+toString(B)
+ANS "Y="+toString(M)+"X+"+toString(B)
+If U>0
+Then
+  S/√(TU)→R
+  ANS "R="+toString(R)+"  R²="+toString(R²)
+  If abs(R)≥.8
+  Then
+    SHOW "STRONG LINEAR RELATIONSHIP"
+  Else
+    If abs(R)≥.5
+    Then
+      SHOW "MODERATE LINEAR RELATIONSHIP"
+    Else
+      SHOW "WEAK LINEAR RELATIONSHIP"
+    End
+  End
+End
+Goto Z
+
+# ---------------------------------------------------------------- perms/combos
+Lbl S3
+ClrHome
+0→θ
+Disp "CHOOSE R ITEMS FROM N"
+Prompt N,R
+If N<0 or R<0 or R>N or fPart(N) or fPart(R)
+Disp "NEED WHOLE NUMBERS","WITH 0≤R≤N"
+If N<0 or R<0 or R>N or fPart(N) or fPart(R)
+Goto Z
+ClrHome
+ANS "== PERMS + COMBOS =="
+SHOW "ORDER MATTERS (PERMUTATION):"
+SHOW "NPR=N!/(N-R)!"
+SHOW "="+toString(N)+"!/"+toString(N-R)+"!"
+ANS "NPR="+toString(N nPr R)
+SHOW "ORDER DOESNT MATTER:"
+SHOW "NCR=N!/(R!(N-R)!)"
+SHOW "="+toString(N)+"!/("+toString(R)+"!*"+toString(N-R)+"!)"
+ANS "NCR="+toString(N nCr R)
+If N≤69
+Then
+  ANS toString(N)+"! = "+toString(N!)
+End
+Goto Z
+
+# ---------------------------------------------------------------- interest
+Lbl S4
+ClrHome
+0→θ
+Disp "P=STARTING MONEY","R=YEARLY RATE IN %","N=COMPOUNDS PER YEAR","T=YEARS"
+Prompt P,R,N,T
+If N≤0 or R≤0
+Disp "NEED N>0 AND R>0"
+If N≤0 or R≤0
+Goto Z
+ClrHome
+ANS "== COMPOUND INTEREST =="
+SHOW "A=P(1+R/N)^(NT)"
+SHOW "="+toString(P)+"(1+"+toString(R/100)+"/"+toString(N)+")^"+toString(NT)
+P(1+R/(100N))^(NT)→A
+ANS "FINAL AMOUNT="+toString(round(A,2))
+ANS "INTEREST EARNED="+toString(round(A-P,2))
+SHOW "CONTINUOUS: A=P*𝑒^(RT)"
+ANS "IF CONTINUOUS="+toString(round(P𝑒^(RT/100),2))
+SHOW "DOUBLING: LN(2)/(N*LN(1+R/N))"
+ANS "DOUBLES IN "+toString(round(ln(2)/(Nln(1+R/(100N))),2))+" YEARS"
+SHOW "RULE OF 72 SAYS "+toString(round(72/R,2))
+Goto Z
+
+# ---------------------------------------------------------------- percent change
+Lbl S5
+ClrHome
+0→θ
+Disp "OLD VALUE A, NEW VALUE B"
+Prompt A,B
+If A=0
+Disp "OLD VALUE CANNOT BE 0"
+If A=0
+Goto Z
+ClrHome
+ANS "== PERCENT CHANGE =="
+SHOW "CHANGE=B-A="+toString(B-A)
+SHOW "PERCENT=CHANGE/|A|*100"
+SHOW "="+toString(B-A)+"/"+toString(abs(A))+"*100"
+100(B-A)/abs(A)→P
+If P≥0
+Then
+  ANS "UP "+toString(P)+"%"
+Else
+  ANS "DOWN "+toString(⁻P)+"%"
+End
+ANS "MULTIPLIER: X"+toString(B/A)
+Goto Z
+
+# ---------------------------------------------------------------- loan
+Lbl S6
+ClrHome
+0→θ
+Disp "P=LOAN AMOUNT","R=YEARLY RATE IN %","Y=YEARS (MONTHLY PAYMENTS)"
+Prompt P,R,Y
+If P≤0 or R<0 or Y≤0
+Disp "NEED P>0, R≥0, Y>0"
+If P≤0 or R<0 or Y≤0
+Goto Z
+ClrHome
+ANS "== LOAN PAYMENT =="
+R/1200→I
+12Y→N
+SHOW "MONTHLY RATE I=R/12="+toString(I)
+SHOW "PAYMENTS N=12Y="+toString(N)
+If I=0
+Then
+  P/N→M
+  SHOW "0% INTEREST: PAY=P/N"
+Else
+  SHOW "PAY=P*I/(1-(1+I)^⁻N)"
+  PI/(1-(1+I)^⁻N)→M
+End
+ANS "MONTHLY PAYMENT="+toString(round(M,2))
+ANS "TOTAL PAID="+toString(round(MN,2))
+ANS "TOTAL INTEREST="+toString(round(MN-P,2))
+Goto Z
+
+# ================================================================ SETTINGS + MORE
+Lbl O
+Menu("SETTINGS + MORE","SHOW WORK ON/OFF",O1,"STEP PACE",O2,"DECIMAL PLACES",O3,"BIRTHDAY MODE!",BD,"ABOUT + STATUS",O4,"BACK",M)
+
+Lbl O1
+not(ʟMPSET(1))→ʟMPSET(1)
+ClrHome
+Disp "SHOW WORK IS NOW:"
+If ʟMPSET(1)
+Disp "ON (STEP BY STEP)"
+If not(ʟMPSET(1))
+Disp "OFF (ANSWERS ONLY)"
+Pause
+Goto O
+
+Lbl O2
+3-ʟMPSET(2)→ʟMPSET(2)
+ClrHome
+Disp "STEP PACE IS NOW:"
+If ʟMPSET(2)=1
+Disp "PAGE (PAUSE EVERY SCREEN)"
+If ʟMPSET(2)=2
+Disp "LINE (PAUSE EVERY STEP)","GREAT FOR TEACHING!"
+Pause
+Goto O
+
+Lbl O3
+Menu("DECIMAL PLACES","FLOAT (NORMAL)",D0,"FIX 2",D2,"FIX 4",D4,"BACK",O)
+Lbl D0
+0→ʟMPSET(3)
+Float
+Goto O
+Lbl D2
+2→ʟMPSET(3)
+Fix 2
+Goto O
+Lbl D4
+4→ʟMPSET(3)
+Fix 4
+Goto O
+
+Lbl O4
+ClrHome
+Disp "MATHPRO V1.0","MADE BY {{FROM}}","FOR {{TEACHER}}"," "
+Disp "SHOW WORK: "+sub("OFFON ",3ʟMPSET(1)+1,3)
+Disp "PACE: "+sub("PAGELINE",4ʟMPSET(2)-3,4)
+Disp "DECIMALS: "+sub("FLOATFIX 2FIX 4",5(ʟMPSET(3)/2)+1,5)
+Pause
+Goto O
+
+# ================================================================ BIRTHDAY
+Lbl BD
+1→ʟMPSET(4)
+FnOff
+PlotsOff
+AxesOff
+GridOff
+LabelOff
+ClrDraw
+# 1 window unit = 1 pixel
+⁻1ᴇ90→Xmin
+264→Xmax
+0→Xmin
+⁻1ᴇ90→Ymin
+164→Ymax
+0→Ymin
+# plate
+Line(40,16,224,16,1,DARKGRAY)
+Line(44,15,220,15,1,DARKGRAY)
+# bottom layer + frosting stripe
+For(I,18,50)
+  Line(62,I,202,I,1,BROWN)
+End
+For(I,51,56)
+  Line(62,I,202,I,1,MAGENTA)
+End
+# top layer + frosting stripe
+For(I,57,78)
+  Line(92,I,172,I,1,BROWN)
+End
+For(I,79,83)
+  Line(92,I,172,I,1,MAGENTA)
+End
+# sprinkles
+For(I,1,25)
+  Pt-On(randInt(64,200),randInt(20,48),1,randInt(10,15))
+End
+# candles
+For(I,104,160,14)
+  Line(I-1,84,I-1,96,1,LTBLUE)
+  Line(I,84,I,96,1,LTBLUE)
+  Line(I+1,84,I+1,96,1,LTBLUE)
+End
+TextColor(MAGENTA)
+Text(⁻1,4,40,"HAPPY BIRTHDAY!")
+TextColor(NAVY)
+Text(30,{{NAMECOL}},"{{TEACHER}}")
+TextColor(BLACK)
+Text(148,4,"FROM {{FROM}}")
+Text(148,170,"PRESS A KEY")
+# flickering flames + sparkles until a key is pressed
+0→K
+While not(K)
+  For(I,104,160,14)
+    Pt-On(I,99,2,11+4randInt(0,2))
+  End
+  Pt-On(randInt(8,50),randInt(25,120),1,randInt(10,15))
+  Pt-On(randInt(214,256),randInt(25,120),1,randInt(10,15))
+  getKey→K
+End
+ClrDraw
+AxesOn
+ZStandard
+Goto M
+
+# ================================================================ QUIT
+Lbl Q
+AxesOn
+ClrHome
+Output(1,1,"THANKS FOR USING MATHPRO!")
+Output(3,1,"HAPPY BIRTHDAY,")
+Output(4,1,"{{TEACHER}}!")

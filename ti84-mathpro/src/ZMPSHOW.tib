@@ -1,0 +1,31 @@
+# ZMPSHOW - prints one line of "show your work" text.
+# Input : Str0 = text. A leading "*" marks a final answer, which is
+#         shown even when SHOW WORK is turned off.
+# Uses  : θ = lines on screen so far (callers reset it to 0 after ClrHome)
+#         ʟMPSET(1) show work on/off, ʟMPSET(2) pace 1=page 2=line,
+#         ʟMPSET(5) scratch flag
+sub(Str0,1,1)="*"→ʟMPSET(5)
+If ʟMPSET(5)
+sub(Str0,2,length(Str0)-1)→Str0
+If ʟMPSET(5) or ʟMPSET(1)
+Then
+  Repeat not(length(Str0))
+    If θ≥9
+    Then
+      Pause
+      ClrHome
+      0→θ
+    End
+    # Wrap long lines at 25 characters
+    Disp sub(Str0,1,min(25,length(Str0)))
+    If length(Str0)>25
+    Then
+      sub(Str0,26,length(Str0)-25)→Str0
+    Else
+      ""→Str0
+    End
+    θ+1→θ
+  End
+  If ʟMPSET(2)=2 and not(ʟMPSET(5)) and θ<9
+  Pause
+End

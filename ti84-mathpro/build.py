@@ -2,7 +2,7 @@
 """Build MATHPRO's TI-BASIC source (src/*.tib) into TI-84 Plus CE .8xp files.
 
     pip install tivars
-    python3 build.py --teacher "MR. SMITH" --from "ADHRIT"
+    python3 build.py --from "ADHRIT"
 
 Source format:
     # comment         removed
@@ -182,20 +182,13 @@ def tokenize(lines):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--teacher", default="MR. TEACHER", help="name shown on the birthday screen")
     ap.add_argument("--from", dest="sender", default="ADHRIT", help="your name")
     args = ap.parse_args()
 
-    teacher = args.teacher.upper()
     sender = args.sender.upper()
-    if len(teacher) > 24 or len(sender) > 18:
-        sys.exit("Names are too long for the screen (teacher ≤ 24, from ≤ 18 characters)")
-    subs = {
-        "TEACHER": teacher,
-        "FROM": sender,
-        # small font is ~6 px per character on a 265 px wide screen
-        "NAMECOL": str(max(0, 132 - 3 * len(teacher))),
-    }
+    if len(sender) > 18:
+        sys.exit("Your name is too long for the screen (18 characters max)")
+    subs = {"FROM": sender}
 
     errors, warnings = [], []
     built = {}

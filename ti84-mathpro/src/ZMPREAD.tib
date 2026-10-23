@@ -1,0 +1,35 @@
+# ZMPREAD - reads a typed polynomial and finds its coefficients.
+# Input : Str1 = any polynomial in X, like "(2X+3)^5" or "(X-1)(X²+4)"
+# Output: ʟMPP = coefficients, highest power first
+#         W = 1 if it really is a polynomial (degree 10 or less), else 0
+# How   : the TI-84 has no algebra system, so we plug in X=0..12, take
+#         finite differences, and rebuild the coefficients from them
+#         (Newton's forward difference formula).
+# Uses  : U,V,W, X, Y₁, ʟMPT, ʟMPU, ʟMPR
+String►Equ(Str1,Y₁)
+seq(Y₁(X),X,0,12)→ʟMPT
+seq(0,X,0,12)→ʟMPU
+# ʟMPU(K+1) = Kth difference at X=0
+For(U,1,13)
+  ʟMPT(1)→ʟMPU(U)
+  If U<13
+  ΔList(ʟMPT)→ʟMPT
+End
+# degree = last nonzero difference
+0→V
+For(U,1,11)
+  If abs(ʟMPU(U))>1ᴇ⁻6
+  U-1→V
+End
+# P(X) = sum of Kth difference * X(X-1)...(X-K+1)/K!
+seq(0,X,0,V)→ʟMPP
+{1}→ʟMPR
+For(U,0,V)
+  For(W,1,U+1)
+    ʟMPP(V-U+W)+ʟMPU(U+1)ʟMPR(W)→ʟMPP(V-U+W)
+  End
+  (augment(ʟMPR,{0})-Uaugment({0},ʟMPR))/(U+1)→ʟMPR
+End
+round(ʟMPP,8)→ʟMPP
+# a real polynomial of degree ≤ 10 has 11th and 12th differences of 0
+abs(ʟMPU(12))+abs(ʟMPU(13))<1ᴇ⁻6→W

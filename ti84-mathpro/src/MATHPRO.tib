@@ -1,6 +1,6 @@
 # =====================================================================
 #  MATHPRO - a show-your-work math suite for the TI-84 Plus CE
-#  Made by {{FROM}} for {{TEACHER}}
+#  Made by {{FROM}}
 #
 #  Source format (handled by build.py):
 #    # ...        comment, removed at build time
@@ -11,7 +11,7 @@
 #  Reserved variables: θ (screen line count), U V W (helper args),
 #  Str0 (line to show), Str9 (fraction result), ʟMPSET (settings),
 #  ʟMPT ʟMPU (data lists)
-#  ʟMPSET = {show work, pace 1=page 2=line, decimals 0/2/4, bday seen, scratch}
+#  ʟMPSET = {show work, pace 1=page 2=line, decimals 0/2/4, title screen off, scratch}
 # =====================================================================
 SetUpEditor MPSET
 SetUpEditor
@@ -25,12 +25,12 @@ Fix 2
 If ʟMPSET(3)=4
 Fix 4
 If not(ʟMPSET(4))
-Goto BD
+Goto SP
 
 # ---------------------------------------------------------------- MAIN MENU
 Lbl M
 ClrHome
-Menu("MATHPRO  V1.0","ALGEBRA",A,"NUMBERS + CODE",N,"GEOMETRY + TRIG",G,"CALCULUS",C,"STATS + MONEY",S,"SETTINGS + MORE",O,"QUIT",Q)
+Menu("MATHPRO  V2.0","ALGEBRA",A,"NUMBERS + CODE",N,"GEOMETRY + TRIG",G,"CALCULUS",C,"STATS + MONEY",S,"SETTINGS + MORE",O,"QUIT",Q)
 
 # Every tool ends here: wait for ENTER, then back to the main menu
 Lbl Z
@@ -39,7 +39,424 @@ Goto M
 
 # ================================================================ ALGEBRA
 Lbl A
-Menu("ALGEBRA","QUADRATIC",A1,"LINEAR EQUATION",A2,"SYSTEM 2X2",A3,"SYSTEM 3X3",A4,"EXPONENTIAL",A5,"SIMPLIFY RADICAL",A6,"BACK",M)
+Menu("ALGEBRA","SOLVE ANYTHING",A8,"POLYNOMIALS",AP,"QUADRATIC",A1,"LINEAR EQUATION",A2,"MORE EQUATIONS",AS,"SIMPLIFY RADICAL",A6,"BACK",M)
+Lbl AS
+Menu("MORE EQUATIONS","SYSTEM 2X2",A3,"SYSTEM 3X3",A4,"EXPONENTIAL",A5,"BACK",A)
+Lbl AP
+Menu("POLYNOMIALS","EXPAND ANYTHING",P1,"FACTOR ANYTHING",P3,"BINOMIAL THEOREM",P2,"FOIL",P6,"DIVIDE BY (X-R)",P5,"BACK",A)
+
+# ---------------------------------------------------------------- solve anything
+Lbl A8
+ClrHome
+0→θ
+Disp "SOLVE ANY EQUATION","EX: X³-2X=5, 2^X=X+3","(= IS IN 2ND MATH)"
+Input "EQUATION: ",Str1
+Input "SEARCH FROM X=",A
+Input "TO X=",B
+If A≥B
+Disp "THE START MUST BE LESS","THAN THE END"
+If A≥B
+Goto Z
+ClrHome
+ANS "== SOLVE: "+Str1+" =="
+# Move everything to one side: LEFT-(RIGHT)=0
+inString(Str1,"=")→I
+If I
+Then
+  "("+sub(Str1,1,I-1)+")-("+sub(Str1,I+1,length(Str1)-I)+")"→Str2
+Else
+  Str1→Str2
+End
+String►Equ(Str2,Y₁)
+SHOW "MOVE ALL TO ONE SIDE:"
+SHOW Str2+"=0"
+SHOW "SCAN "+toString(A)+" TO "+toString(B)+" FOR"
+SHOW "PLACES THE SIGN CHANGES,"
+SHOW "THEN ZOOM IN (BISECTION)"
+# complex mode so things like √(X) don't crash for negative X
+a+bi
+(B-A)/200→H
+0→N
+{0}→ʟMPR
+Y₁(A)→P
+For(I,1,200)
+  A+IH→X
+  Y₁(X)→Q
+  If imag(P)=0 and imag(Q)=0
+  Then
+    0→S
+    If real(Q)=0
+    Then
+      X→M
+      1→S
+    End
+    If real(P)real(Q)<0
+    Then
+      X-H→L
+      X→R
+      real(P)→E
+      For(K,1,45)
+        (L+R)/2→M
+        real(Y₁(M))→F
+        If EF≤0
+        Then
+          M→R
+        Else
+          M→L
+          F→E
+        End
+      End
+      # a sign change across an asymptote (like 1/X) is not a root
+      abs(Y₁(M))<.0001→S
+    End
+    If S
+    Then
+      N+1→N
+      If N=1
+      Then
+        {M}→ʟMPR
+      Else
+        augment(ʟMPR,{M})→ʟMPR
+      End
+      SHOW "SIGN CHANGE NEAR X="+toString(round(M,3))
+      ANS "X="+toString(round(M,9))
+    End
+  End
+  Q→P
+End
+Real
+If N=0
+Then
+  ANS "NO SOLUTIONS FOUND"
+  ANS "FROM X="+toString(A)+" TO "+toString(B)
+Else
+  ANS toString(N)+" SOLUTION(S) FOUND"
+End
+Pause
+Menu("GRAPH IT?","YES",A9,"NO, MAIN MENU",M)
+Lbl A9
+A→U
+B→V
+prgmZMPGRAPH
+For(I,1,N)
+  Pt-On(ʟMPR(I),0,3,RED)
+End
+TextColor(RED)
+Text(1,2,"X = SOLUTIONS")
+TextColor(BLUE)
+Text(14,2,"LEFT SIDE - RIGHT SIDE")
+Goto Z
+
+# ---------------------------------------------------------------- expand anything
+Lbl P1
+ClrHome
+0→θ
+Disp "EXPAND ANY POLYNOMIAL","EX: (X+2)³ OR (2X-1)(X+5)","USE X,T,θ,n FOR X"
+Input "P(X)=",Str1
+prgmZMPREAD
+If not(W)
+Disp "THAT IS NOT A POLYNOMIAL","(OR DEGREE IS OVER 10)"
+If not(W)
+Goto Z
+ClrHome
+0→θ
+ANS "EXPAND: "+Str1
+SHOW "HOW: PLUG IN X=0,1,2...12"
+SHOW "THEN USE FINITE DIFFERENCES"
+SHOW "TO REBUILD THE COEFFICIENTS"
+prgmZMPPOLY
+ANS "= "+Str8
+ANS "DEGREE "+toString(dim(ʟMPP)-1)+", CONSTANT "+toString(ʟMPP(dim(ʟMPP)))
+Goto Z
+
+# ---------------------------------------------------------------- binomial theorem
+Lbl P2
+ClrHome
+0→θ
+Disp "EXPAND (AX+B)^N"
+Prompt A,B,N
+If A=0 or B=0 or N<0 or N>30 or fPart(N)
+Disp "NEED A≠0, B≠0, AND","N A WHOLE NUMBER 0-30"
+If A=0 or B=0 or N<0 or N>30 or fPart(N)
+Goto Z
+ClrHome
+{A,B}→ʟMPP
+prgmZMPPOLY
+ANS "== EXPAND ("+Str8+")^"+toString(N)+" =="
+SHOW "BINOMIAL THEOREM:"
+SHOW "TERM K = NCK*(AX)^(N-K)*B^K"
+""→Str5
+seq(0,X,0,N)→ʟMPR
+For(K,0,N)
+  N nCr K→C
+  Str5+toString(C)+" "→Str5
+  CA^(N-K)B^K→ʟMPR(K+1)
+  SHOW "K="+toString(K)+": "+toString(C)+"*"+toString(A^(N-K))+"*"+toString(B^K)+"="+toString(ʟMPR(K+1))
+End
+SHOW "PASCAL ROW: "+Str5
+ʟMPR→ʟMPP
+prgmZMPPOLY
+ANS "= "+Str8
+Goto Z
+
+# ---------------------------------------------------------------- FOIL
+Lbl P6
+ClrHome
+0→θ
+Disp "MULTIPLY (AX+B)(CX+D)"
+Prompt A,B,C,D
+ClrHome
+{A,B}→ʟMPP
+prgmZMPPOLY
+Str8→Str6
+{C,D}→ʟMPP
+prgmZMPPOLY
+ANS "== ("+Str6+")("+Str8+") =="
+SHOW "F: FIRSTS "+toString(A)+"X*"+toString(C)+"X="+toString(AC)+"X²"
+SHOW "O: OUTERS "+toString(A)+"X*"+toString(D)+"="+toString(AD)+"X"
+SHOW "I: INNERS "+toString(B)+"*"+toString(C)+"X="+toString(BC)+"X"
+SHOW "L: LASTS "+toString(B)+"*"+toString(D)+"="+toString(BD)
+SHOW "COMBINE THE MIDDLE:"
+SHOW toString(AD)+"X+"+toString(BC)+"X="+toString(AD+BC)+"X"
+{AC,AD+BC,BD}→ʟMPP
+prgmZMPPOLY
+ANS "= "+Str8
+Goto Z
+
+# ---------------------------------------------------------------- divide by (X-R)
+Lbl P5
+ClrHome
+0→θ
+Disp "DIVIDE P(X) BY (X-R)","EX: X³-6X²+11X-6, R=1"
+Input "P(X)=",Str1
+prgmZMPREAD
+If not(W) or dim(ʟMPP)<2
+Disp "NEED A POLYNOMIAL OF","DEGREE 1 TO 10"
+If not(W) or dim(ʟMPP)<2
+Goto Z
+Prompt R
+ClrHome
+0→θ
+ʟMPP→ʟMPT
+{1,⁻R}→ʟMPP
+prgmZMPPOLY
+Str8→Str6
+ʟMPT→ʟMPP
+prgmZMPPOLY
+ANS "== ("+Str8+")/("+Str6+") =="
+dim(ʟMPT)→N
+SHOW "SYNTHETIC DIVISION BY "+toString(R)
+SHOW "BRING DOWN "+toString(ʟMPT(1))
+ʟMPT→ʟMPR
+For(K,2,N)
+  ʟMPT(K)+RʟMPR(K-1)→ʟMPR(K)
+  SHOW toString(R)+"*"+toString(ʟMPR(K-1))+"+"+toString(ʟMPT(K))+"="+toString(ʟMPR(K))
+End
+ʟMPR(N)→H
+N-1→dim(ʟMPR)
+ʟMPR→ʟMPP
+prgmZMPPOLY
+ANS "QUOTIENT: "+Str8
+ANS "REMAINDER: "+toString(H)
+SHOW "REMAINDER THEOREM: P("+toString(R)+")="+toString(H)
+If H=0
+Then
+  ANS "SO ("+Str6+") IS A FACTOR!"
+End
+Goto Z
+
+# ---------------------------------------------------------------- factor anything
+Lbl P3
+ClrHome
+0→θ
+Disp "FACTOR A POLYNOMIAL","EX: X³-7X+6, 6X²+X-2,","X^4-16 (WHOLE NUMBERS)"
+Input "P(X)=",Str1
+prgmZMPREAD
+W and dim(ʟMPP)>1→W
+If W
+max(abs(fPart(ʟMPP)))=0→W
+If not(W)
+Disp "NEED A POLYNOMIAL WITH","WHOLE NUMBER COEFFICIENTS"
+If not(W)
+Goto Z
+ClrHome
+0→θ
+prgmZMPPOLY
+ANS "== FACTOR "+Str8+" =="
+""→Str7
+0→T
+# Step 1: greatest common factor
+abs(ʟMPP(1))→G
+For(I,2,dim(ʟMPP))
+  gcd(G,abs(ʟMPP(I)))→G
+End
+If ʟMPP(1)<0
+⁻G→G
+If G≠1
+Then
+  ʟMPP/G→ʟMPP
+  SHOW "PULL OUT THE GCF: "+toString(G)
+  If G=⁻1
+  Then
+    "-"→Str7
+  Else
+    toString(G)→Str7
+  End
+  1→T
+End
+# Step 2: pull out powers of X
+0→E
+While ʟMPP(dim(ʟMPP))=0
+  dim(ʟMPP)-1→dim(ʟMPP)
+  E+1→E
+End
+If E
+Then
+  Str7+"X"→Str7
+  If E>1
+  Str7+"^"+toString(E)→Str7
+  SHOW "PULL OUT X^"+toString(E)
+  1→T
+End
+# Step 3: rational root theorem until a quadratic is left
+If dim(ʟMPP)>3
+Then
+  SHOW "RATIONAL ROOT THEOREM:"
+  SHOW "TRY X=+/-(FACTOR OF LAST)"
+  SHOW "       /(FACTOR OF FIRST)"
+End
+1→F
+While F and dim(ʟMPP)>3
+  0→F
+  dim(ʟMPP)-1→N
+  abs(ʟMPP(N+1))→C
+  ʟMPP(1)→A
+  For(I,1,C)
+    If not(F) and not(fPart(C/I))
+    Then
+      For(J,1,A)
+        If not(F) and not(fPart(A/J)) and gcd(I,J)=1
+        Then
+          For(S,⁻1,1,2)
+            If not(F)
+            Then
+              # J^N * P(SI/J), done in whole numbers so it is exact
+              0→H
+              For(K,1,N+1)
+                H+ʟMPP(K)(SI)^(N+1-K)J^(K-1)→H
+              End
+              If H=0
+              Then
+                SI→P
+                J→Q
+                1→F
+              End
+            End
+          End
+        End
+      End
+    End
+  End
+  If F
+  Then
+    # divide by (QX-P)
+    seq(0,X,1,N)→ʟMPR
+    ʟMPP(1)/Q→ʟMPR(1)
+    For(K,2,N)
+      (ʟMPP(K)+PʟMPR(K-1))/Q→ʟMPR(K)
+    End
+    toString(P)→Str5
+    If Q≠1
+    Str5+"/"+toString(Q)→Str5
+    {Q,⁻P}→ʟMPP
+    prgmZMPPOLY
+    "("+Str8+")"→Str6
+    SHOW "X="+Str5+" MAKES IT 0,"
+    SHOW "SO "+Str6+" IS A FACTOR"
+    Str7+Str6→Str7
+    1→T
+    ʟMPR→ʟMPP
+    prgmZMPPOLY
+    SHOW "DIVIDE IT OUT: "+Str8
+  End
+End
+# Step 4: what is left
+If dim(ʟMPP)=3
+Then
+  ʟMPP(1)→A
+  ʟMPP(2)→B
+  ʟMPP(3)→C
+  prgmZMPPOLY
+  AC→E
+  SHOW "AC METHOD ON "+Str8+":"
+  SHOW "A*C="+toString(E)+". FIND 2 NUMBERS"
+  SHOW "THAT MULTIPLY TO "+toString(E)
+  SHOW "AND ADD TO "+toString(B)
+  0→F
+  For(I,1,√(abs(E)))
+    If not(F) and not(fPart(E/I))
+    Then
+      If I+E/I=B
+      Then
+        I→P
+        E/I→Q
+        1→F
+      End
+      If not(F) and ⁻I-E/I=B
+      Then
+        ⁻I→P
+        ⁻E/I→Q
+        1→F
+      End
+    End
+  End
+  If F
+  Then
+    SHOW "FOUND: "+toString(P)+" AND "+toString(Q)
+    SHOW "SPLIT: "+toString(A)+"X²+"+toString(P)+"X+"+toString(Q)+"X+"+toString(C)
+    gcd(A,abs(P))→G
+    A/G→R
+    P/G→S
+    Q/R→H
+    {R,S}→ʟMPP
+    prgmZMPPOLY
+    Str8→Str6
+    SHOW "GROUP: "+toString(G)+"X("+Str6+")+"+toString(H)+"("+Str6+")"
+    {G,H}→ʟMPP
+    prgmZMPPOLY
+    If G=R and H=S
+    Then
+      SHOW "PERFECT SQUARE!"
+      Str7+"("+Str6+")²"→Str7
+    Else
+      Str7+"("+Str8+")("+Str6+")"→Str7
+    End
+    1→T
+  Else
+    SHOW "NO PAIR WORKS, SO "+Str8
+    SHOW "DOESNT FACTOR ANY MORE"
+    Str7+"("+Str8+")"→Str7
+  End
+Else
+  If dim(ʟMPP)>1
+  Then
+    prgmZMPPOLY
+    If dim(ʟMPP)>3
+    Then
+      SHOW "NO MORE RATIONAL ROOTS"
+    End
+    Str7+"("+Str8+")"→Str7
+  End
+End
+If T
+Then
+  ANS "= "+Str7
+Else
+  ANS "CANNOT BE FACTORED OVER"
+  ANS "THE INTEGERS (IT IS PRIME)"
+End
+Goto Z
+
 
 # ---------------------------------------------------------------- quadratic
 Lbl A1
@@ -1479,7 +1896,7 @@ Goto Z
 
 # ================================================================ SETTINGS + MORE
 Lbl O
-Menu("SETTINGS + MORE","SHOW WORK ON/OFF",O1,"STEP PACE",O2,"DECIMAL PLACES",O3,"BIRTHDAY MODE!",BD,"ABOUT + STATUS",O4,"BACK",M)
+Menu("SETTINGS + MORE","SHOW WORK ON/OFF",O1,"STEP PACE",O2,"DECIMAL PLACES",O3,"TITLE SCREEN",O5,"ABOUT + STATUS",O4,"BACK",M)
 
 Lbl O1
 not(ʟMPSET(1))→ʟMPSET(1)
@@ -1520,16 +1937,28 @@ Goto O
 
 Lbl O4
 ClrHome
-Disp "MATHPRO V1.0","MADE BY {{FROM}}","FOR {{TEACHER}}"," "
+Disp "MATHPRO V2.0","MADE BY {{FROM}}"," "
 Disp "SHOW WORK: "+sub("OFFON ",3ʟMPSET(1)+1,3)
 Disp "PACE: "+sub("PAGELINE",4ʟMPSET(2)-3,4)
 Disp "DECIMALS: "+sub("FLOATFIX 2FIX 4",5(ʟMPSET(3)/2)+1,5)
+Disp "TITLE SCREEN: "+sub("ON OFF",3ʟMPSET(4)+1,3)
 Pause
 Goto O
 
-# ================================================================ BIRTHDAY
-Lbl BD
-1→ʟMPSET(4)
+Lbl O5
+not(ʟMPSET(4))→ʟMPSET(4)
+ClrHome
+Disp "TITLE SCREEN IS NOW:"
+If ʟMPSET(4)
+Disp "OFF"
+If not(ʟMPSET(4))
+Disp "ON (PLAYS AT START)"
+Pause
+Goto O
+
+# ================================================================ TITLE SCREEN
+Lbl SP
+Radian
 FnOff
 PlotsOff
 AxesOff
@@ -1543,53 +1972,34 @@ ClrDraw
 ⁻1ᴇ90→Ymin
 164→Ymax
 0→Ymin
-# plate
-Line(40,16,224,16,1,DARKGRAY)
-Line(44,15,220,15,1,DARKGRAY)
-# bottom layer + frosting stripe
-For(I,18,50)
-  Line(62,I,202,I,1,BROWN)
+# rainbow sine wave
+{11,15,19,14,10,13}→ʟMPR
+For(I,0,258,6)
+  ʟMPR(1+iPart(6fPart(I/72)))→C
+  Line(I,70+30sin(I/21),I+6,70+30sin((I+6)/21),1,C)
+  Line(I,71+30sin(I/21),I+6,71+30sin((I+6)/21),1,C)
 End
-For(I,51,56)
-  Line(62,I,202,I,1,MAGENTA)
-End
-# top layer + frosting stripe
-For(I,57,78)
-  Line(92,I,172,I,1,BROWN)
-End
-For(I,79,83)
-  Line(92,I,172,I,1,MAGENTA)
-End
-# sprinkles
-For(I,1,25)
-  Pt-On(randInt(64,200),randInt(20,48),1,randInt(10,15))
-End
-# candles
-For(I,104,160,14)
-  Line(I-1,84,I-1,96,1,LTBLUE)
-  Line(I,84,I,96,1,LTBLUE)
-  Line(I+1,84,I+1,96,1,LTBLUE)
-End
-TextColor(MAGENTA)
-Text(⁻1,4,40,"HAPPY BIRTHDAY!")
 TextColor(NAVY)
-Text(30,{{NAMECOL}},"{{TEACHER}}")
-TextColor(BLACK)
-Text(148,4,"FROM {{FROM}}")
-Text(148,170,"PRESS A KEY")
-# flickering flames + sparkles until a key is pressed
+Text(⁻1,16,54,"M A T H P R O")
+TextColor(MAGENTA)
+Text(46,45,"THE SHOW-YOUR-WORK CALCULATOR")
+TextColor(DARKGRAY)
+Text(148,90,"PRESS ANY KEY")
+# math symbols pop up until a key is pressed
 0→K
 While not(K)
-  For(I,104,160,14)
-    Pt-On(I,99,2,11+4randInt(0,2))
-  End
-  Pt-On(randInt(8,50),randInt(25,120),1,randInt(10,15))
-  Pt-On(randInt(214,256),randInt(25,120),1,randInt(10,15))
+  TextColor(randInt(10,19))
+  Text(randInt(64,132),randInt(2,250),sub("π²+=XY√(/*",randInt(1,9),1))
   getKey→K
 End
 ClrDraw
 AxesOn
-ZStandard
+⁻10→Xmin
+10→Xmax
+⁻10→Ymin
+10→Ymax
+1→Xscl
+1→Yscl
 Goto M
 
 # ================================================================ QUIT
@@ -1597,5 +2007,4 @@ Lbl Q
 AxesOn
 ClrHome
 Output(1,1,"THANKS FOR USING MATHPRO!")
-Output(3,1,"HAPPY BIRTHDAY,")
-Output(4,1,"{{TEACHER}}!")
+Output(3,1,"KEEP DOING MATH :)")

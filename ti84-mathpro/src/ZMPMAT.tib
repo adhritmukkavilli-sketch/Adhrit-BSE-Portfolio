@@ -1,0 +1,12 @@
+# ZMPMAT - lets you type a matrix into [A], one row at a time.
+# Output: [A], R = rows, C = columns.  Uses I,J, ʟMPT.
+Input "ROWS: ",R
+Input "COLUMNS: ",C
+{R,C}→dim([A])
+For(I,1,R)
+  Disp "ROW "+toString(I)+": "+toString(C)+" NUMBERS"
+  Input "{...}: ",ʟMPT
+  For(J,1,C)
+    ʟMPT(J)→[A](I,J)
+  End
+End

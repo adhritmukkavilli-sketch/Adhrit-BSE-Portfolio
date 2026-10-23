@@ -1,0 +1,12 @@
+# ZMPMSH - shows matrix [A] (R rows) as fractions, when show work is on.
+If ʟMPSET(1)
+Then
+  If θ+R>9
+  Then
+    Pause
+    ClrHome
+    0→θ
+  End
+  Disp [A]►Frac
+  θ+R→θ
+End

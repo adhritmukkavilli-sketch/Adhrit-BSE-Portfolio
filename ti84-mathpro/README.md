@@ -5,16 +5,29 @@ works like the normal home screen, but you can also type things like `FACTOR X³
 `X²-5X+6≥0` and it solves them step by step. It covers Advanced Algebra 2 (factoring, inequalities,
 quadratics, complex numbers, polynomials, rational functions), plus geometry, calculus, stats and more.
 
-## Put it on the calculator
+## Download it and put it on the calculator
 
-1. Install **TI Connect CE** (free from education.ti.com) and plug the calculator in with its USB cable.
-2. Drag **`dist/MATHPRO.8xg`** onto the calculator in TI Connect CE. It's one file holding all 18 programs.
-   (The separate `.8xp` files in `dist/` contain the same programs, if you ever need them one at a time.)
-3. On the calculator press `prgm`, pick **MATHPRO**, and press `enter` twice.
+**1. Get the file `MATHPRO.8xg`** (one file holds all 22 programs). Either:
+- open https://github.com/adhritmukkavilli-sketch/Adhrit-BSE-Portfolio/blob/ti84-mathpro/ti84-mathpro/dist/MATHPRO.8xg
+  and click the **download** button (the arrow pointing down, top right of the file view), or
+- download it straight from https://github.com/adhritmukkavilli-sketch/Adhrit-BSE-Portfolio/raw/ti84-mathpro/ti84-mathpro/dist/MATHPRO.8xg
 
-Next time it's even faster: right after running it once, `2nd` `enter` brings back `prgmMATHPRO`.
+**2. Install TI Connect CE** on a Windows or Mac computer: search "TI Connect CE download" or go to
+education.ti.com → Downloads → TI Connect CE. It's free.
 
-You need OS 5.3 or newer. To check, press `2nd` `+` (mem), then **1:About**.
+**3. Send it to the calculator:**
+1. Turn the calculator on and plug it into the computer with its USB cable.
+2. Open TI Connect CE and click **Calculator Explorer** (the second icon on the left side).
+3. Drag `MATHPRO.8xg` from your Downloads folder onto the calculator's name.
+4. If it asks where to put the programs, the default is fine. Click **Send**.
+
+**4. Run it:** press `prgm`, pick **MATHPRO**, and press `enter` twice.
+Next time, `2nd` `enter` (entry recall) brings back `prgmMATHPRO` right away.
+
+You need calculator OS 5.3 or newer. To check, press `2nd` `+` (mem), then **1:About**. If it's older,
+TI Connect CE can update it.
+If the calculator says it's out of memory, delete or archive other programs and apps you don't need
+(`2nd` `+` → **2:Mem Management**). MATHPRO needs about 64 KB.
 
 ### "Normal calculator + a button for the special mode"
 The calculator itself stays completely normal. Nothing changes until you run MATHPRO.
@@ -32,6 +45,9 @@ and typing **`M`** opens the special tool menus.
 | `ROOTS X³-1` | Every root, real and complex, with multiplicities (Fundamental Theorem of Algebra) |
 | `X²=2X+3` or `2^X=X+3` | Solves it (anything with `=`) |
 | `X²-5X+6≥0`, `abs(X-3)<5` | Solves the inequality with a sign chart, answer in **interval notation** |
+| `GRAPH X³-4X` | Graphs it with a window that fits |
+| `TABLE X²-3` | Table of values from X=⁻4 to 4 |
+| any answer | Also shows the **exact form** when there is one: `.6666…` → `2/3`, `2.356…` → `3π/4`, `1.414…` → `√(2)` |
 | `M` | Tool menus |
 | `Q` | Quit |
 
@@ -44,7 +60,7 @@ Type letters with `alpha` (`2nd` `alpha` locks it). `=`, `<`, `≥`... are in `2
 | **Algebra** | Solve anything (equations + inequalities) · **Quadratics:** solve + graph with exact radical/complex answers, completing the square, parabola through 3 points, vertical motion, **complex numbers** (+ − × ÷, powers of 𝑖, √ of negatives) · Linear equations · **Transformations** of parent functions (described + graphed) · 2×2 / 3×3 systems · Exponential equations · Simplify √N |
 | **Polynomials** | Expand · Factor · All roots (lists the possible rational roots) · **Graph features** (end behavior, zeros crossing/touching, turning points, local max/min) · Long division · Build a polynomial from its roots · Binomial theorem · FOIL · Synthetic division |
 | **Rational (Ch 7)** | **Graph features** (holes, vertical/horizontal/slant asymptotes, intercepts, domain, graph) · Simplify · Multiply/divide · Add/subtract (finds the LCD) · Solve rational equations |
-| **More math** | Numbers + code (GCD, primes, base converter, bitwise, fractions, sequences) · Geometry + trig (triangle solvers that draw the triangle, distance/midpoint/slope, circles + solids) · Calculus (derivatives, integrals, Riemann sums, Newton's method, limits) · Stats + money |
+| **More math** | **Matrices:** row reduce showing every row operation (solves systems), determinant by cofactors, inverse, multiply · **Exp + logs:** log of any base (change of base), exponent equations, exponential model through 2 points, half-life/doubling, log rules, solve log equations · **Geometry + trig:** right triangles, SSS/SAS/ASA and the **SSA ambiguous case** (0, 1 or 2 triangles), **unit circle exact values**, degrees ↔ radians in terms of π, distance/midpoint/slope, circles + solids · **Calculus:** function tools (tables, composition f(g(x)) simplified, average rate of change), derivatives, integrals, Riemann sums, Newton's method, limits · **Stats + probability:** 1-variable stats, line of best fit, perms/combos, **binomial**, **normal curve** (shaded), percentiles, interest, loans · **Numbers + code:** GCD, primes, base converter, bitwise, fractions, sequences |
 | **Settings** | Show work ON/OFF · Step pace (pause every screen, or every line) · Decimal places · Title screen ON/OFF |
 
 ### Tips
@@ -56,7 +72,7 @@ Type letters with `alpha` (`2nd` `alpha` locks it). `=`, `<`, `≥`... are in `2
 - If a tool ever stops with an error, choose **1:Quit** and run MATHPRO again.
 
 ### Good to know
-MATHPRO uses the letter variables A–Z, `Str0`–`Str9`, matrices `[A]`–`[C]`, `Y₁` and `Y₂`, and it changes the graph window.
+MATHPRO uses the letter variables A–Z (calculator mode included), `Str0`–`Str9`, matrices `[A]`–`[C]`, `Y₁` and `Y₂`, and it changes the graph window.
 Its settings and scratch work live in lists whose names start with `MP`, so it doesn't touch L₁–L₆.
 Geometry switches to Degree mode, and calculus switches to Radian mode.
 
@@ -69,7 +85,7 @@ Geometry switches to Degree mode, and calculus switches to Radian mode.
   on the calculator. Examples: a `Goto` inside a loop (leaks memory), `-` where the negative sign `⁻` belongs,
   `R²` turning into the regression variable, or `>=` silently becoming `≥` inside text.
 - `tools/tisim.py`: a TI-BASIC simulator that runs the real compiled files.
-  `python3 tools/test_mathpro.py` runs 105 tests that cover every tool and check the answers.
+  `python3 tools/test_mathpro.py` runs 148 tests that cover every tool and check the answers.
 
 The tests run on the simulator, not a real calculator. If something acts differently on the real
 calculator, note the error and what you typed.

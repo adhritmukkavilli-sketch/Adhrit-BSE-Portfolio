@@ -1,0 +1,23 @@
+# ZMPPI - writes X*π nicely, like "3π/4", "π", "⁻π/6" or "2π".
+# Output: Str9, W = 1 if X was a fraction.  Uses U,V,W, ʟMPW.
+prgmZMPNUM
+If W
+Then
+  inString(Str9+"/","/")→U
+  sub(Str9+"/",1,U-1)→Str8
+  If Str8="1"
+  ""→Str8
+  If Str8="⁻1"
+  "⁻"→Str8
+  If Str8="0"
+  Then
+    "0"→Str9
+  Else
+    If U>length(Str9)
+    Then
+      Str8+"π"→Str9
+    Else
+      Str8+"π"+sub(Str9,U,length(Str9)-U+1)→Str9
+    End
+  End
+End

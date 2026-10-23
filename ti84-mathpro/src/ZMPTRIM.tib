@@ -1,0 +1,4 @@
+# ZMPTRIM - removes spaces from the end of Str9.
+While length(Str9)>1 and sub(Str9,length(Str9),1)=" "
+  sub(Str9,1,length(Str9)-1)→Str9
+End

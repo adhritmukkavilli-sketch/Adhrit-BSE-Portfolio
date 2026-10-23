@@ -34,7 +34,7 @@ def tokens_of_bytes(data):
 
 def tokens_of_text(text):
     """Tokenize what a user types into an Input prompt."""
-    data, _ = encode(text)
+    data, _ = encode(text.replace("π", "pi"))
     return tokens_of_bytes(data)
 
 
@@ -539,7 +539,14 @@ class Sim:
                 return x if self.mode["deg"] else x * math.pi / 180
             raise TIError(op)
         if isinstance(a, list) and a and isinstance(a[0], list):
-            raise TIError("matrix postfix not supported")
+            if op != "⁻¹":
+                raise TIError("matrix postfix not supported")
+            n = len(a)
+            if self.det(a) == 0:
+                raise TIError("ERR:SINGULAR MAT")
+            aug = [row[:] + [1.0 if i == j else 0.0 for j in range(n)] for i, row in enumerate(a)]
+            red = self.rref(aug)
+            return [row[n:] for row in red]
         return self.unary(f, a)
 
     def power(self, a, b):
@@ -608,6 +615,10 @@ class Sim:
                 eq = a == b
                 return float(eq if op == "=" else not eq)
             raise TIError("ERR:DATA TYPE (string math)")
+        ma = isinstance(a, list) and a and isinstance(a[0], list)
+        mb = isinstance(b, list) and b and isinstance(b[0], list)
+        if ma or mb:
+            return self.matop(op, a, b, ma, mb)
         if isinstance(a, list) and isinstance(b, list):
             if len(a) != len(b):
                 raise TIError("ERR:DIM MISMATCH")
@@ -617,6 +628,19 @@ class Sim:
         if isinstance(b, list):
             return [self.check(self.arith(op, a, y)) for y in b]
         return self.check(self.arith(op, a, b))
+
+    def matop(self, op, a, b, ma, mb):
+        if ma and mb and op == "*":
+            if len(a[0]) != len(b):
+                raise TIError("ERR:DIM MISMATCH (matrix multiply)")
+            return [[chop(sum(a[i][k] * b[k][j] for k in range(len(b)))) for j in range(len(b[0]))] for i in range(len(a))]
+        if ma and mb and op in "+-":
+            return [[chop(self.arith(op, x, y)) for x, y in zip(ra, rb)] for ra, rb in zip(a, b)]
+        if ma and not mb and op in "*/":
+            return [[chop(self.arith(op, x, b)) for x in row] for row in a]
+        if mb and not ma and op == "*":
+            return [[chop(a * x) for x in row] for row in b]
+        raise TIError("ERR:DATA TYPE (matrix op)")
 
     def is_str(self, node, val):
         """Strings are lists of tokens; tell them apart from number lists by origin."""
@@ -689,6 +713,8 @@ class Sim:
         V = vals
 
         def listmap(f, x):
+            if isinstance(x, list) and x and isinstance(x[0], list):
+                return [[self.check(f(self.num(e))) for e in row] for row in x]
             if isinstance(x, list):
                 return [self.check(f(self.num(e))) for e in x]
             return self.check(f(self.num(x)))
@@ -813,6 +839,45 @@ class Sim:
             return self.det(V[0])
         if name == "rref(":
             return self.rref(V[0])
+        if name == "rowSwap(":
+            m = [row[:] for row in V[0]]
+            i, j = self.integer(V[1]) - 1, self.integer(V[2]) - 1
+            m[i], m[j] = m[j], m[i]
+            return m
+        if name == "*row(":
+            m = [row[:] for row in V[1]]
+            i = self.integer(V[2]) - 1
+            m[i] = [chop(V[0] * x) for x in m[i]]
+            return m
+        if name == "*row+(":
+            m = [row[:] for row in V[1]]
+            i, j = self.integer(V[2]) - 1, self.integer(V[3]) - 1
+            m[j] = [chop(y + V[0] * x) for x, y in zip(m[i], m[j])]
+            return m
+        if name == "normalcdf(":
+            lo, hi = self.real(V[0]), self.real(V[1])
+            mu = self.real(V[2]) if len(V) > 2 else 0.0
+            sd = self.real(V[3]) if len(V) > 3 else 1.0
+            cdf = lambda x: 0.5 * (1 + math.erf((x - mu) / (sd * math.sqrt(2))))
+            return chop(cdf(hi) - cdf(lo))
+        if name == "invNorm(":
+            p = self.real(V[0])
+            mu = self.real(V[1]) if len(V) > 1 else 0.0
+            sd = self.real(V[2]) if len(V) > 2 else 1.0
+            lo, hi = -40.0, 40.0
+            for _ in range(200):
+                mid = (lo + hi) / 2
+                if 0.5 * (1 + math.erf(mid / math.sqrt(2))) < p:
+                    lo = mid
+                else:
+                    hi = mid
+            return chop(mu + sd * (lo + hi) / 2)
+        if name in ("binompdf(", "binomcdf("):
+            n, p, k = self.integer(V[0]), self.real(V[1]), self.integer(V[2])
+            if k < 0:
+                raise TIError("ERR:DOMAIN (binom k<0)")
+            pdf = lambda i: math.comb(n, i) * p ** i * (1 - p) ** (n - i)
+            return chop(pdf(k) if name == "binompdf(" else sum(pdf(i) for i in range(k + 1)))
         if name == "randInt(":
             import random
             return float(random.randint(self.integer(V[0]), self.integer(V[1])))
@@ -1166,6 +1231,18 @@ class Sim:
         if head == "ZoomFit":
             self.zoomfit()
             return
+        if head == "Disp " and rest and rest[-1] == "►Frac":
+            v = self.ev(Parser(rest[:-1]).expr())
+            from fractions import Fraction
+            def fr(x):
+                f = Fraction(x).limit_denominator(10000)
+                return (("⁻" if f < 0 else "") + str(abs(f))) if abs(float(f) - x) < 1e-9 else fmt_num(x, self.mode)
+            if isinstance(v, list) and v and isinstance(v[0], list):
+                for row in v:
+                    self.show("[" + " ".join(fr(x) for x in row) + "]")
+            else:
+                self.show(fr(v))
+            return
         if head == "Disp ":
             p = Parser(rest)
             while True:
@@ -1203,6 +1280,10 @@ class Sim:
             else:
                 v = self.ev(Parser(tokens_of_text(raw)).expr())
                 self.store(v, tgt, ("num", 0))
+            return
+        if head == "ShadeNorm(":
+            self.check_window()
+            self.graph.append((head, [self.ev(a) for a in Parser(rest).args()]))
             return
         if head in ("Line(", "Pt-On(", "Pt-Off(", "Circle(", "Shade(", "GraphColor(", "TextColor(", "Text("):
             vals = [self.ev(a) for a in Parser(rest).args()] if head != "Shade(" else []

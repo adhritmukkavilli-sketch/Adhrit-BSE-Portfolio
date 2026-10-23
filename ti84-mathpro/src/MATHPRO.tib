@@ -37,7 +37,7 @@ Lbl M
 Real
 0→ʟMPSET(6)
 ClrHome
-Menu("MATHPRO  V3.0","CALCULATOR MODE",H,"ALGEBRA",A,"POLYNOMIALS",PY,"RATIONAL (CH 7)",RF,"MORE MATH",X,"SETTINGS",O,"QUIT",Q)
+Menu("MATHPRO  V4.0","CALCULATOR MODE",H,"ALGEBRA",A,"POLYNOMIALS",PY,"RATIONAL (CH 7)",RF,"MORE MATH",X,"SETTINGS",O,"QUIT",Q)
 
 # Every tool ends here: wait for ENTER, then go back where we came from
 Lbl Z
@@ -48,7 +48,7 @@ Goto H
 Goto M
 
 Lbl X
-Menu("MORE MATH","NUMBERS + CODE",N,"GEOMETRY + TRIG",G,"CALCULUS",C,"STATS + MONEY",S,"BACK",M)
+Menu("MORE MATH","MATRICES",MX,"EXP + LOGS",EL,"GEOMETRY + TRIG",G,"CALCULUS",C,"STATS + PROB",S,"NUMBERS + CODE",N,"BACK",M)
 
 # ================================================================ CALCULATOR MODE
 # Works like the normal home screen. Words at the start run a tool:
@@ -58,7 +58,7 @@ Lbl H
 a+bi
 1→ʟMPSET(6)
 ClrHome
-Disp "CALCULATOR MODE: TYPE","MATH LIKE NORMAL, OR START","WITH FACTOR, EXPAND, ROOTS","= AND < > SOLVE THEMSELVES","M=MENU  Q=QUIT"
+Disp "CALCULATOR MODE: TYPE","MATH LIKE NORMAL, OR START","WITH FACTOR, EXPAND,","ROOTS, GRAPH OR TABLE.","= < > SOLVE THEMSELVES.","M=MENU  Q=QUIT"
 Lbl H1
 Input ">",Str1
 length(Str1)→L
@@ -81,6 +81,10 @@ If Str2="ROOTS"
 Goto PQ
 If Str2="SOLVE"
 Goto HS
+If Str2="GRAPH"
+Goto HG
+If Str2="TABLE"
+Goto HT
 Str6→Str1
 0→K
 For(I,1,5)
@@ -89,9 +93,13 @@ For(I,1,5)
 End
 If K
 Goto HS
+# lists can't be turned into exact forms, so remember if there is one
+inString(Str1,"{")→K
 expr(Str1)
 Disp Ans
+If K
 Goto H1
+Goto HE
 Lbl HS
 ⁻25→A
 25→B
@@ -1981,7 +1989,7 @@ Goto Z
 
 # ================================================================ NUMBERS + CODE
 Lbl N
-Menu("NUMBERS + CODE","GCD/LCM (EUCLID)",N1,"PRIME FACTORS",N2,"BASE CONVERTER",N3,"BITWISE OPS",N4,"FRACTION MATH",N5,"SEQUENCES",N6,"BACK",M)
+Menu("NUMBERS + CODE","GCD/LCM (EUCLID)",N1,"PRIME FACTORS",N2,"BASE CONVERTER",N3,"BITWISE OPS",N4,"FRACTION MATH",N5,"SEQUENCES",N6,"BACK",X)
 
 # ---------------------------------------------------------------- Euclid
 Lbl N1
@@ -2368,7 +2376,7 @@ Goto Z
 # ================================================================ GEOMETRY + TRIG
 Lbl G
 Degree
-Menu("GEOMETRY + TRIG","RIGHT TRIANGLE",G1,"TRIANGLE: SSS",G2,"TRIANGLE: SAS",G3,"TRIANGLE ASA/AAS",G4,"2 POINTS + LINE",G5,"CIRCLES + SOLIDS",G6,"BACK",M)
+Menu("GEOMETRY + TRIG","RIGHT TRIANGLE",G1,"SOLVE TRIANGLE",GV,"UNIT CIRCLE",GU,"DEG/RAD CONVERT",GR,"2 POINTS + LINE",G5,"CIRCLES + SOLIDS",G6,"BACK",X)
 
 # ---------------------------------------------------------------- right triangle
 Lbl G1
@@ -2665,7 +2673,7 @@ Goto Z
 # ================================================================ CALCULUS
 Lbl C
 Radian
-Menu("CALCULUS","DERIVATIVE",C1,"INTEGRAL + AREA",C2,"RIEMANN SUMS",C3,"NEWTONS METHOD",C4,"LIMIT TABLE",C5,"BACK",M)
+Menu("CALCULUS","FUNCTION TOOLS",FT,"DERIVATIVE",C1,"INTEGRAL + AREA",C2,"RIEMANN SUMS",C3,"NEWTONS METHOD",C4,"LIMIT TABLE",C5,"BACK",X)
 
 # ---------------------------------------------------------------- derivative
 Lbl C1
@@ -2903,7 +2911,7 @@ Goto Z
 
 # ================================================================ STATS + MONEY
 Lbl S
-Menu("STATS + MONEY","1-VARIABLE STATS",S1,"LINE OF BEST FIT",S2,"PERMS + COMBOS",S3,"INTEREST",S4,"PERCENT CHANGE",S5,"LOAN PAYMENT",S6,"BACK",M)
+Menu("STATS + PROB","1-VARIABLE STATS",S1,"LINE OF BEST FIT",S2,"PROBABILITY",SQ,"INTEREST",S4,"PERCENT CHANGE",S5,"LOAN PAYMENT",S6,"BACK",X)
 
 # ---------------------------------------------------------------- 1-var stats
 Lbl S1
@@ -3132,7 +3140,7 @@ Goto O
 
 Lbl O4
 ClrHome
-Disp "MATHPRO V3.0","MADE BY {{FROM}}"," "
+Disp "MATHPRO V4.0","MADE BY {{FROM}}"," "
 Disp "SHOW WORK: "+sub("OFFON ",3ʟMPSET(1)+1,3)
 Disp "PACE: "+sub("PAGELINE",4ʟMPSET(2)-3,4)
 Disp "DECIMALS: "+sub("FLOATFIX 2FIX 4",5(ʟMPSET(3)/2)+1,5)
@@ -3196,6 +3204,730 @@ AxesOn
 1→Xscl
 1→Yscl
 Goto H
+
+
+# ================================================================ CALC MODE EXTRAS
+# GRAPH command
+Lbl HG
+String►Equ(Str1,Y₁)
+⁻10→U
+10→V
+prgmZMPGRAPH
+Pause
+Goto H
+
+# TABLE command
+Lbl HT
+String►Equ(Str1,Y₁)
+ClrHome
+0→θ
+ANS "TABLE OF Y="+Str1
+For(I,⁻4,4)
+  Y₁(I)→Y
+  If imag(Y)=0
+  Then
+    Y→X
+    prgmZMPNUM
+    ANS "X="+toString(I)+"   Y="+Str9
+  Else
+    ANS "X="+toString(I)+"   Y="+toString(Y)
+  End
+End
+Goto Z
+
+# exact form of the last answer: fraction, multiple of π, or square root
+Lbl HE
+Ans→Y
+If imag(Y)≠0
+Goto H1
+If not(fPart(Y))
+Goto H1
+Y→X
+prgmZMPNUM
+If W
+Then
+  Disp "= "+Str9
+Else
+  Y/π→X
+  prgmZMPPI
+  If W and ʟMPW(3)≤24
+  Then
+    Disp "= "+Str9
+  Else
+    Y²→X
+    prgmZMPNUM
+    If W
+    Then
+      # Y = ±√(P/Q) = ±√(PQ)/Q, then simplify the radical
+      ʟMPW(1)ʟMPW(3)→N
+      ʟMPW(3)→Q
+      iPart(√(N))→K
+      While fPart(N/K²)
+        K-1→K
+      End
+      N/K²→M
+      gcd(K,Q)→G
+      K/G→K
+      Q/G→Q
+      If M≠1
+      Then
+        ""→Str9
+        If Y<0
+        "⁻"→Str9
+        If K≠1
+        Str9+toString(K)→Str9
+        Str9+"√("+toString(M)+")"→Str9
+        If Q≠1
+        Str9+"/"+toString(Q)→Str9
+        Disp "= "+Str9
+      End
+    End
+  End
+End
+Goto H1
+
+# ================================================================ FUNCTION TOOLS
+Lbl FT
+Menu("FUNCTION TOOLS","TABLE OF VALUES",FA,"COMPOSE F(G(X))",FB,"RATE OF CHANGE",FC,"BACK",C)
+
+Lbl FA
+ClrHome
+Disp "TABLE OF VALUES"
+Input "F(X)=",Str1
+Input "START AT X=",A
+Input "STEP SIZE=",H
+String►Equ(Str1,Y₁)
+a+bi
+ClrHome
+0→θ
+ANS "== Y="+Str1+" =="
+For(I,0,9)
+  Y₁(A+IH)→Y
+  If imag(Y)=0
+  Then
+    Y→X
+    prgmZMPNUM
+  Else
+    "NONREAL"→Str9
+  End
+  ANS "X="+toString(A+IH)+"   Y="+Str9
+End
+Real
+Goto Z
+
+Lbl FB
+ClrHome
+Disp "COMPOSE FUNCTIONS","EX: F=X²+1, G=2X-3"
+Input "F(X)=",Str3
+Input "G(X)=",Str4
+ClrHome
+0→θ
+ANS "F="+Str3+", G="+Str4
+SHOW "PUT G IN FOR EVERY X IN F:"
+""→Str1
+For(I,1,length(Str3))
+  sub(Str3,I,1)→Str2
+  If Str2="X"
+  "("+Str4+")"→Str2
+  Str1+Str2→Str1
+End
+ANS "F(G(X))="+Str1
+prgmZMPREAD
+If W
+Then
+  POLY ʟMPP
+  ANS "       ="+Str8
+End
+SHOW "PUT F IN FOR EVERY X IN G:"
+""→Str1
+For(I,1,length(Str4))
+  sub(Str4,I,1)→Str2
+  If Str2="X"
+  "("+Str3+")"→Str2
+  Str1+Str2→Str1
+End
+ANS "G(F(X))="+Str1
+prgmZMPREAD
+If W
+Then
+  POLY ʟMPP
+  ANS "       ="+Str8
+End
+Goto Z
+
+Lbl FC
+ClrHome
+Disp "AVERAGE RATE OF CHANGE","FROM X=A TO X=B"
+Input "F(X)=",Str1
+Prompt A,B
+If A=B
+Disp "A AND B MUST DIFFER"
+If A=B
+Goto Z
+String►Equ(Str1,Y₁)
+ClrHome
+0→θ
+ANS "== RATE OF CHANGE =="
+SHOW "=(F(B)-F(A))/(B-A)"
+SHOW "=("+toString(Y₁(B))+"-"+toString(Y₁(A))+")/("+toString(B)+"-"+toString(A)+")"
+(Y₁(B)-Y₁(A))/(B-A)→X
+prgmZMPNUM
+ANS "= "+Str9
+SHOW "(SLOPE OF THE SECANT LINE)"
+Goto Z
+
+# ================================================================ MATRICES
+Lbl MX
+Menu("MATRICES","ROW REDUCE",M1,"DETERMINANT",M2,"INVERSE",M3,"MULTIPLY",M4,"BACK",X)
+
+Lbl M1
+ClrHome
+Disp "ROW REDUCE A MATRIX","(AUGMENTED SYSTEMS TOO)"
+prgmZMPMAT
+ClrHome
+0→θ
+ANS "== ROW REDUCE =="
+SHOW "START:"
+prgmZMPMSH
+1→P
+For(J,1,C)
+  If P≤R
+  Then
+    # find a row at or below P with a nonzero number in column J
+    0→K
+    For(I,P,R)
+      If not(K) and abs([A](I,J))>1ᴇ⁻9
+      I→K
+    End
+    If K
+    Then
+      If K≠P
+      Then
+        rowSwap([A],P,K)→[A]
+        SHOW "SWAP R"+toString(P)+" AND R"+toString(K)
+      End
+      [A](P,J)→V
+      If V≠1
+      Then
+        *row(1/V,[A],P)→[A]
+        V→X
+        prgmZMPNUM
+        SHOW "R"+toString(P)+"=R"+toString(P)+"/("+Str9+")"
+      End
+      For(I,1,R)
+        If I≠P and abs([A](I,J))>1ᴇ⁻9
+        Then
+          [A](I,J)→V
+          *row+(⁻V,[A],P,I)→[A]
+          V→X
+          prgmZMPNUM
+          SHOW "R"+toString(I)+"=R"+toString(I)+"-("+Str9+")R"+toString(P)
+        End
+      End
+      round([A],9)→[A]
+      prgmZMPMSH
+      P+1→P
+    End
+  End
+End
+ANS "REDUCED ROW ECHELON FORM:"
+If θ+R>9
+Then
+  Pause
+  ClrHome
+  0→θ
+End
+Disp [A]►Frac
+θ+R→θ
+# an augmented system with a unique answer
+If C=R+1 and P>R
+Then
+  For(I,1,R)
+    [A](I,C)→X
+    prgmZMPNUM
+    ANS "X"+toString(I)+"="+Str9
+  End
+End
+If C=R+1 and P≤R
+Then
+  ANS "A ROW OF ZEROS: NO UNIQUE"
+  ANS "SOLUTION"
+End
+Goto Z
+
+Lbl M2
+ClrHome
+Disp "DETERMINANT"
+prgmZMPMAT
+If R≠C
+Disp "IT MUST BE SQUARE"
+If R≠C
+Goto Z
+ClrHome
+0→θ
+ANS "== DETERMINANT =="
+If R=2
+Then
+  SHOW "DET=AD-BC"
+  SHOW "=("+toString([A](1,1))+")("+toString([A](2,2))+")-("+toString([A](1,2))+")("+toString([A](2,1))+")"
+End
+If R=3
+Then
+  SHOW "EXPAND ALONG ROW 1 (+-+):"
+  For(J,1,3)
+    1+(J=1)→E
+    3-(J=3)→F
+    [A](2,E)[A](3,F)-[A](2,F)[A](3,E)→M
+    SHOW sub("+-+",J,1)+toString([A](1,J))+"*(2X2 DET "+toString(M)+")"
+  End
+End
+round(det([A]),9)→X
+prgmZMPNUM
+ANS "DET="+Str9
+If X=0
+Then
+  ANS "DET=0: NO INVERSE (SINGULAR)"
+End
+Goto Z
+
+Lbl M3
+ClrHome
+Disp "INVERSE MATRIX"
+prgmZMPMAT
+If R≠C
+Disp "IT MUST BE SQUARE"
+If R≠C
+Goto Z
+ClrHome
+0→θ
+ANS "== INVERSE =="
+round(det([A]),9)→D
+D→X
+prgmZMPNUM
+SHOW "DET="+Str9
+If D=0
+Then
+  ANS "DET=0, SO NO INVERSE"
+Else
+  If R=2
+  Then
+    SHOW "SWAP A AND D, NEGATE B AND C,"
+    SHOW "DIVIDE EVERYTHING BY DET"
+  Else
+    SHOW "(ROW REDUCE [A|I] TO [I|INV])"
+  End
+  round([A]⁻¹,9)→[A]
+  ANS "INVERSE:"
+  If θ+R>9
+  Then
+    Pause
+    ClrHome
+    0→θ
+  End
+  Disp [A]►Frac
+  θ+R→θ
+End
+Goto Z
+
+Lbl M4
+ClrHome
+Disp "MULTIPLY [A]*[B]","FIRST MATRIX:"
+prgmZMPMAT
+[A]→[B]
+R→N
+C→K
+Disp "SECOND MATRIX:"
+prgmZMPMAT
+If K≠R
+Disp "COLUMNS OF THE FIRST MUST","EQUAL ROWS OF THE SECOND"
+If K≠R
+Goto Z
+ClrHome
+0→θ
+ANS "== MULTIPLY =="
+SHOW "EACH ENTRY = ROW * COLUMN"
+SHOW "ENTRY (1,1): ROW 1 OF FIRST"
+SHOW "TIMES COLUMN 1 OF SECOND"
+0→S
+For(I,1,K)
+  S+[B](1,I)[A](I,1)→S
+End
+SHOW "="+toString(S)
+[B]*[A]→[A]
+N→R
+ANS "RESULT ("+toString(N)+"X"+toString(C)+"):"
+If θ+R>9
+Then
+  Pause
+  ClrHome
+  0→θ
+End
+Disp [A]►Frac
+θ+R→θ
+Goto Z
+
+# ================================================================ EXPONENTS + LOGS
+Lbl EL
+Menu("EXP + LOGS","LOG OF ANY BASE",E1,"EXPONENT EQ",A5,"MODEL 2 POINTS",E2,"HALF-LIFE/DOUBLE",E3,"LOG RULES",E4,"SOLVE LOG EQ",A8,"BACK",X)
+
+Lbl E1
+ClrHome
+Disp "LOG BASE B OF N"
+Prompt B,N
+If B≤0 or B=1 or N≤0
+Disp "NEED B>0, B≠1, N>0"
+If B≤0 or B=1 or N≤0
+Goto Z
+ClrHome
+0→θ
+ANS "== LOG"+toString(B)+"("+toString(N)+") =="
+SHOW "ASK: "+toString(B)+" TO WHAT POWER IS "+toString(N)+"?"
+SHOW "CHANGE OF BASE:"
+SHOW "=LOG("+toString(N)+")/LOG("+toString(B)+")"
+SHOW "="+toString(log(N))+"/"+toString(log(B))
+log(N)/log(B)→X
+prgmZMPNUM
+ANS "= "+Str9
+ANS "CHECK: "+toString(B)+"^"+Str9+"="+toString(B^X)
+SHOW "SAME AS LN("+toString(N)+")/LN("+toString(B)+")"
+Goto Z
+
+Lbl E2
+ClrHome
+Disp "EXPONENTIAL Y=A*B^X","THROUGH 2 POINTS"
+Disp "POINT 1 (P,Q)","POINT 2 (R,S)"
+Prompt P,Q,R,S
+If P=R or Q*S≤0
+Disp "NEED DIFFERENT X VALUES","+ SAME-SIGN Y VALUES"
+If P=R or Q*S≤0
+Goto Z
+ClrHome
+0→θ
+ANS "== EXPONENTIAL MODEL =="
+SHOW "DIVIDE THE EQUATIONS:"
+SHOW toString(S)+"/"+toString(Q)+"=B^("+toString(R)+"-"+toString(P)+")"
+(S/Q)^(1/(R-P))→B
+SHOW "B=("+toString(S/Q)+")^(1/"+toString(R-P)+")"
+Q/B^P→A
+SHOW "A=Y1/B^X1="+toString(A)
+ANS "Y="+toString(A)+"*"+toString(B)+"^X"
+If B>1
+Then
+  ANS "GROWTH: "+toString(100(B-1))+"% PER STEP"
+  ANS "DOUBLES EVERY "+toString(log(2)/log(B))
+End
+If B<1
+Then
+  ANS "DECAY: "+toString(100(1-B))+"% PER STEP"
+  ANS "HALVES EVERY "+toString(log(.5)/log(B))
+End
+SHOW "CONTINUOUS: Y=A*𝑒^(KX), K="+toString(ln(B))
+Goto Z
+
+Lbl E3
+Menu("HALF-LIFE/DOUBLE","HALF-LIFE",E5,"DOUBLING TIME",E6)
+Lbl E5
+.5→B
+Goto E7
+Lbl E6
+2→B
+Lbl E7
+ClrHome
+Disp "STARTING AMOUNT A,","HALF-LIFE/DOUBLING TIME H,","TIME PASSED T"
+Prompt A,H,T
+If H≤0
+Disp "H MUST BE POSITIVE"
+If H≤0
+Goto Z
+ClrHome
+0→θ
+ANS "== AMOUNT AFTER TIME =="
+SHOW "Y=A*"+toString(B)+"^(T/H)"
+SHOW "="+toString(A)+"*"+toString(B)+"^("+toString(T)+"/"+toString(H)+")"
+SHOW "("+toString(T/H)+" PERIODS)"
+ANS "AMOUNT="+toString(AB^(T/H))
+SHOW "AS A % RATE PER TIME UNIT:"
+ANS toString(100(B^(1/H)-1))+"% PER UNIT"
+Goto Z
+
+Lbl E4
+ClrHome
+0→θ
+ANS "== LOG RULES =="
+ANS "LOG(MN)=LOG(M)+LOG(N)"
+ANS "LOG(M/N)=LOG(M)-LOG(N)"
+ANS "LOG(M^P)=P*LOG(M)"
+ANS "LOGB(B)=1, LOGB(1)=0"
+ANS "LOGB(B^X)=X, B^LOGB(X)=X"
+ANS "LOGB(N)=LOG(N)/LOG(B)"
+ANS "B^X=N MEANS LOGB(N)=X"
+ANS "LN IS LOG BASE 𝑒=2.718..."
+Goto Z
+
+# ================================================================ TRIG EXTRAS
+Lbl GV
+Menu("SOLVE TRIANGLE","SSS",G2,"SAS",G3,"ASA/AAS",G4,"SSA (AMBIGUOUS)",GS,"BACK",G)
+
+Lbl GS
+ClrHome
+Disp "SSA: ANGLE A, THE SIDE A","ACROSS FROM IT, SIDE B"
+Input "ANGLE A=",D
+Input "SIDE A=",A
+Input "SIDE B=",B
+If D≤0 or D≥180 or A≤0 or B≤0
+Disp "0<ANGLE<180, SIDES>0"
+If D≤0 or D≥180 or A≤0 or B≤0
+Goto Z
+ClrHome
+0→θ
+ANS "== SSA (AMBIGUOUS CASE) =="
+SHOW "HEIGHT H=B*SIN(A)="+toString(Bsin(D))
+SHOW "LAW OF SINES:"
+SHOW "SIN(B)=B*SIN(A)/A"
+Bsin(D)/A→S
+If abs(S-1)<1ᴇ⁻10
+1→S
+SHOW "="+toString(S)
+0→N
+If S>1
+Then
+  ANS "SIN(B)>1: NO TRIANGLE"
+  ANS "(SIDE A IS TOO SHORT)"
+Else
+  sin⁻¹(S)→E
+  180-E→G
+  If D+E<180
+  Then
+    N+1→N
+    180-D-E→F
+    ANS "TRIANGLE 1: B="+toString(round(E,4))+"°"
+    ANS "  C="+toString(round(F,4))+"°, SIDE C="+toString(round(Asin(F)/sin(D),4))
+  End
+  If D+G<180 and abs(G-E)>1ᴇ⁻8
+  Then
+    N+1→N
+    180-D-G→F
+    ANS "TRIANGLE 2: B="+toString(round(G,4))+"°"
+    ANS "  C="+toString(round(F,4))+"°, SIDE C="+toString(round(Asin(F)/sin(D),4))
+  End
+  If N=2
+  Then
+    ANS "2 TRIANGLES (AMBIGUOUS!)"
+  End
+  If N=1
+  Then
+    ANS "EXACTLY 1 TRIANGLE"
+  End
+  If N=0
+  Then
+    ANS "NO TRIANGLE"
+  End
+End
+Goto Z
+
+# ---------------------------------------------------------------- unit circle
+Lbl GU
+Menu("ANGLE IS IN","DEGREES",U1,"A MULTIPLE OF π",U2)
+Lbl U1
+Input "ANGLE (DEGREES)=",D
+Goto U3
+Lbl U2
+Disp "TYPE K FOR Kπ, LIKE 5/6"
+Input "ANGLE=π*",D
+180D→D
+Lbl U3
+Degree
+ClrHome
+0→θ
+round(D-360int(D/360),9)→E
+D/180→X
+prgmZMPPI
+ANS "== "+toString(D)+"° = "+Str9+" =="
+SHOW "COTERMINAL ANGLE: "+toString(E)+"°"
+0→Q
+If fPart(E/90)
+1+int(E/90)→Q
+If Q
+Then
+  SHOW "QUADRANT "+toString(Q)
+Else
+  SHOW "ON AN AXIS"
+End
+E→R
+If Q=2
+180-E→R
+If Q=3
+E-180→R
+If Q=4
+360-E→R
+# on an axis: 0°/180° act like 0°, 90°/270° act like 90°
+If not(Q)
+E-180int(E/180)→R
+If Q
+Then
+  SHOW "REFERENCE ANGLE: "+toString(R)+"°"
+End
+SHOW "ALL STUDENTS TAKE CALCULUS:"
+SHOW "Q1 ALL+, Q2 SIN+, Q3 TAN+, Q4 COS+"
+# exact values for the special angles 0, 30, 45, 60, 90
+sum({1,2,3,4,5}(R={0,30,45,60,90}))→K
+round(sin(E),10)→S
+round(cos(E),10)→C
+If K
+Then
+  sub("0    1/2  √(2)/2√(3)/21    ",5K-4,5)→Str9
+  prgmZMPTRIM
+  If S<0
+  "-"+Str9→Str9
+  ANS "SIN="+Str9
+  If E=90 or E=270
+  Then
+    sub("0    1/2  √(2)/2√(3)/21    ",1,5)→Str9
+  Else
+    sub("0    1/2  √(2)/2√(3)/21    ",5(6-K)-4,5)→Str9
+  End
+  prgmZMPTRIM
+  If C<0
+  "-"+Str9→Str9
+  ANS "COS="+Str9
+  If C=0
+  Then
+    ANS "TAN=UNDEFINED"
+  Else
+    sub("0    √(3)/31    √(3) ",5K-4,5)→Str9
+    prgmZMPTRIM
+    If S/C<0
+    "-"+Str9→Str9
+    ANS "TAN="+Str9
+  End
+Else
+  ANS "SIN="+toString(S)
+  ANS "COS="+toString(C)
+  If C≠0
+  Then
+    ANS "TAN="+toString(S/C)
+  End
+End
+SHOW "POINT ON THE CIRCLE: (COS,SIN)"
+Goto Z
+
+# ---------------------------------------------------------------- degrees / radians
+Lbl GR
+Menu("CONVERT","DEGREES TO RAD",W1,"RADIANS TO DEG",W2,"BACK",G)
+Lbl W1
+ClrHome
+Input "DEGREES=",D
+ClrHome
+0→θ
+SHOW "MULTIPLY BY π/180:"
+SHOW toString(D)+"*π/180"
+D/180→X
+prgmZMPPI
+ANS toString(D)+"° = "+Str9+" RADIANS"
+ANS "(ABOUT "+toString(πD/180)+")"
+Goto Z
+Lbl W2
+ClrHome
+Disp "TYPE π WITH 2ND ^"
+Input "RADIANS=",D
+ClrHome
+0→θ
+SHOW "MULTIPLY BY 180/π:"
+ANS toString(round(D,9))+" RADIANS = "+toString(round(180D/π,9))+"°"
+Goto Z
+
+# ================================================================ PROBABILITY
+Lbl SQ
+Menu("PROBABILITY","PERMS + COMBOS",S3,"BINOMIAL",SB,"NORMAL CURVE",SN,"PERCENTILE",SI,"BACK",S)
+
+Lbl SB
+ClrHome
+Disp "N TRIES, P=CHANCE EACH","TRY WORKS, K SUCCESSES"
+Prompt N,P,K
+If N<1 or fPart(N) or P<0 or P>1 or K<0 or K>N or fPart(K)
+Disp "N, K WHOLE NUMBERS, K≤N,","0≤P≤1"
+If N<1 or fPart(N) or P<0 or P>1 or K<0 or K>N or fPart(K)
+Goto Z
+ClrHome
+0→θ
+ANS "== BINOMIAL =="
+SHOW "P(X=K)=NCK*P^K*(1-P)^(N-K)"
+If P>0 and P<1
+Then
+  SHOW "="+toString(N nCr K)+"*"+toString(P^K)+"*"+toString((1-P)^(N-K))
+End
+ANS "P(X="+toString(K)+")="+toString(binompdf(N,P,K))
+ANS "P(X≤"+toString(K)+")="+toString(binomcdf(N,P,K))
+If K=0
+Then
+  ANS "P(X≥0)=1"
+Else
+  ANS "P(X≥"+toString(K)+")="+toString(1-binomcdf(N,P,K-1))
+End
+SHOW "MEAN=NP="+toString(NP)
+SHOW "SD=√(NP(1-P))="+toString(√(NP(1-P)))
+Goto Z
+
+Lbl SN
+ClrHome
+Disp "NORMAL CURVE: MEAN M, SD S","AREA FROM X=A TO X=B","(USE ⁻1ᴇ99 OR 1ᴇ99 FOR","NO LIMIT)"
+Prompt M,S,A,B
+If S≤0 or A≥B
+Disp "NEED S>0 AND A<B"
+If S≤0 or A≥B
+Goto Z
+ClrHome
+0→θ
+ANS "== NORMAL CURVE =="
+SHOW "Z-SCORE: Z=(X-MEAN)/SD"
+If abs(A)<1ᴇ90
+Then
+  SHOW "Z FOR A: "+toString((A-M)/S)
+End
+If abs(B)<1ᴇ90
+Then
+  SHOW "Z FOR B: "+toString((B-M)/S)
+End
+normalcdf(A,B,M,S)→P
+ANS "P(A<X<B)="+toString(P)
+ANS "THAT IS "+toString(round(100P,2))+"%"
+SHOW "EMPIRICAL RULE: 68% WITHIN"
+SHOW "1 SD, 95% WITHIN 2, 99.7% 3"
+Pause
+Menu("SHADE IT?","YES",SH,"NO, GO BACK",ZR)
+Lbl SH
+FnOff
+PlotsOff
+AxesOn
+⁻1ᴇ90→Xmin
+M+4S→Xmax
+M-4S→Xmin
+S→Xscl
+⁻1ᴇ90→Ymin
+.5/S→Ymax
+⁻.1/S→Ymin
+1→Yscl
+ClrDraw
+ShadeNorm(max(A,M-5S),min(B,M+5S),M,S)
+Goto Z
+
+Lbl SI
+ClrHome
+Disp "WHAT X IS AT A PERCENTILE?","MEAN M, SD S, PERCENT P"
+Prompt M,S,P
+If S≤0 or P≤0 or P≥100
+Disp "NEED S>0 AND 0<P<100"
+If S≤0 or P≤0 or P≥100
+Goto Z
+ClrHome
+0→θ
+ANS "== PERCENTILE =="
+invNorm(P/100)→Z
+SHOW "Z-SCORE FOR "+toString(P)+"%: "+toString(Z)
+SHOW "X=MEAN+Z*SD"
+SHOW "="+toString(M)+"+"+toString(Z)+"*"+toString(S)
+ANS "X="+toString(M+ZS)
+Goto Z
 
 # ================================================================ QUIT
 Lbl Q

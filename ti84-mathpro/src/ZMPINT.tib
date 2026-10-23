@@ -1,0 +1,15 @@
+# ZMPINT - scales ʟMPP to whole-number coefficients with no common
+# factor and a positive leading coefficient.  Uses I,Y,Z.
+1→Y
+While max(abs(fPart(round(YʟMPP,6))))>0 and Y<1000
+  Y+1→Y
+End
+round(YʟMPP,6)→ʟMPP
+0→Z
+For(I,1,dim(ʟMPP))
+  gcd(Z,abs(ʟMPP(I)))→Z
+End
+If ʟMPP(1)<0
+⁻Z→Z
+If Z≠0
+ʟMPP/Z→ʟMPP

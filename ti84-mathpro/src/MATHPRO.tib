@@ -4,19 +4,23 @@
 #
 #  Source format (handled by build.py):
 #    # ...        comment, removed at build time
-#    SHOW expr   -> expr→Str0 then prgmZMPSHOW   (a work step)
-#    ANS expr    -> "*"+expr→Str0 then prgmZMPSHOW (an answer, always shown)
+#    SHOW expr   -> a work step (hidden when show work is off)
+#    ANS expr    -> an answer (always shown)
+#    POLY list   -> turns a coefficient list into text in Str8
 #    indentation is removed at build time
 #
-#  Reserved variables: θ (screen line count), U V W (helper args),
-#  Str0 (line to show), Str9 (fraction result), ʟMPSET (settings),
-#  ʟMPT ʟMPU (data lists)
-#  ʟMPSET = {show work, pace 1=page 2=line, decimals 0/2/4, title screen off, scratch}
+#  Reserved: θ (screen line count), U V W (helper scratch), Str0 (line to
+#  show), Str8 (polynomial text), Str9 (number/fraction text)
+#  ʟMPSET = {show work, pace 1=page 2=line, decimals 0/2/4,
+#            title screen off, scratch, came from calculator mode,
+#            saved show-work flag, unused}
+#  Polynomials are lists of coefficients, highest power first:
+#  {2,0,⁻3,1} means 2X³-3X+1
 # =====================================================================
 SetUpEditor MPSET
 SetUpEditor
-If dim(ʟMPSET)<5
-{1,1,0,0,0}→ʟMPSET
+If dim(ʟMPSET)<8
+{1,1,0,0,0,0,0,0}→ʟMPSET
 Func
 Real
 Float
@@ -26,76 +30,151 @@ If ʟMPSET(3)=4
 Fix 4
 If not(ʟMPSET(4))
 Goto SP
+Goto H
 
 # ---------------------------------------------------------------- MAIN MENU
 Lbl M
+Real
+0→ʟMPSET(6)
 ClrHome
-Menu("MATHPRO  V2.0","ALGEBRA",A,"NUMBERS + CODE",N,"GEOMETRY + TRIG",G,"CALCULUS",C,"STATS + MONEY",S,"SETTINGS + MORE",O,"QUIT",Q)
+Menu("MATHPRO  V3.0","CALCULATOR MODE",H,"ALGEBRA",A,"POLYNOMIALS",PY,"RATIONAL (CH 7)",RF,"MORE MATH",X,"SETTINGS",O,"QUIT",Q)
 
-# Every tool ends here: wait for ENTER, then back to the main menu
+# Every tool ends here: wait for ENTER, then go back where we came from
 Lbl Z
 Pause
+Lbl ZR
+If ʟMPSET(6)
+Goto H
 Goto M
+
+Lbl X
+Menu("MORE MATH","NUMBERS + CODE",N,"GEOMETRY + TRIG",G,"CALCULUS",C,"STATS + MONEY",S,"BACK",M)
+
+# ================================================================ CALCULATOR MODE
+# Works like the normal home screen. Words at the start run a tool:
+#   FACTOR X²+5X+6    EXPAND (X+1)^5    ROOTS X³-1    SOLVE X²=2X+3
+# Anything with = < > ≤ ≥ is solved automatically. M = menu, Q = quit.
+Lbl H
+a+bi
+1→ʟMPSET(6)
+ClrHome
+Disp "CALCULATOR MODE: TYPE","MATH LIKE NORMAL, OR START","WITH FACTOR, EXPAND, ROOTS","= AND < > SOLVE THEMSELVES","M=MENU  Q=QUIT"
+Lbl H1
+Input ">",Str1
+length(Str1)→L
+If not(L)
+Goto M
+Str1→Str6
+inString(Str1+" "," ")→I
+sub(Str1+" ",1,I-1)→Str2
+If L>I
+sub(Str1,I+1,L-I)→Str1
+If Str2="M" or Str2="MENU"
+Goto M
+If Str2="Q" or Str2="QUIT"
+Goto Q
+If Str2="FACTOR"
+Goto PF
+If Str2="EXPAND"
+Goto PE
+If Str2="ROOTS"
+Goto PQ
+If Str2="SOLVE"
+Goto HS
+Str6→Str1
+0→K
+For(I,1,5)
+  If inString(Str1,sub("≤≥<>"+"=",I,1))
+  1→K
+End
+If K
+Goto HS
+expr(Str1)
+Disp Ans
+Goto H1
+Lbl HS
+⁻25→A
+25→B
+Goto SV
 
 # ================================================================ ALGEBRA
 Lbl A
-Menu("ALGEBRA","SOLVE ANYTHING",A8,"POLYNOMIALS",AP,"QUADRATIC",A1,"LINEAR EQUATION",A2,"MORE EQUATIONS",AS,"SIMPLIFY RADICAL",A6,"BACK",M)
+Menu("ALGEBRA","SOLVE ANYTHING",A8,"QUADRATICS",QD,"LINEAR EQUATION",A2,"TRANSFORMATIONS",TR,"MORE EQUATIONS",AS,"SIMPLIFY RADICAL",A6,"BACK",M)
 Lbl AS
 Menu("MORE EQUATIONS","SYSTEM 2X2",A3,"SYSTEM 3X3",A4,"EXPONENTIAL",A5,"BACK",A)
-Lbl AP
-Menu("POLYNOMIALS","EXPAND ANYTHING",P1,"FACTOR ANYTHING",P3,"BINOMIAL THEOREM",P2,"FOIL",P6,"DIVIDE BY (X-R)",P5,"BACK",A)
+Lbl QD
+Menu("QUADRATICS","SOLVE + GRAPH",A1,"COMPLETE SQUARE",AQ,"FROM 3 POINTS",AR,"VERTICAL MOTION",AV,"COMPLEX NUMBERS",CX,"BACK",A)
 
 # ---------------------------------------------------------------- solve anything
 Lbl A8
 ClrHome
-0→θ
-Disp "SOLVE ANY EQUATION","EX: X³-2X=5, 2^X=X+3","(= IS IN 2ND MATH)"
-Input "EQUATION: ",Str1
+Disp "SOLVE AN EQUATION OR","INEQUALITY. EXAMPLES:","X³-2X=5    2^X=X+3","abs(X-3)<5  X²≥4","(=<> ARE IN 2ND MATH)"
+Input ":",Str1
 Input "SEARCH FROM X=",A
 Input "TO X=",B
 If A≥B
 Disp "THE START MUST BE LESS","THAN THE END"
 If A≥B
 Goto Z
+
+# Solver core. Input: Str1, search range A to B
+Lbl SV
 ClrHome
-ANS "== SOLVE: "+Str1+" =="
-# Move everything to one side: LEFT-(RIGHT)=0
-inString(Str1,"=")→I
-If I
+0→θ
+ANS "== "+Str1+" =="
+# O: 1 ≤, 2 ≥, 3 <, 4 >, 5 =
+0→O
+For(K,1,5)
+  If not(O)
+  Then
+    inString(Str1,sub("≤≥<>"+"=",K,1))→I
+    If I
+    K→O
+  End
+End
+If O
 Then
-  "("+sub(Str1,1,I-1)+")-("+sub(Str1,I+1,length(Str1)-I)+")"→Str2
+  sub(Str1,I+1,length(Str1)-I)→Str2
+  If Str2="0"
+  Then
+    sub(Str1,1,I-1)→Str2
+  Else
+    "("+sub(Str1,1,I-1)+")-("+Str2+")"→Str2
+  End
 Else
   Str1→Str2
+  5→O
 End
 String►Equ(Str2,Y₁)
 SHOW "MOVE ALL TO ONE SIDE:"
-SHOW Str2+"=0"
-SHOW "SCAN "+toString(A)+" TO "+toString(B)+" FOR"
-SHOW "PLACES THE SIGN CHANGES,"
-SHOW "THEN ZOOM IN (BISECTION)"
+SHOW Str2+sub("≤≥<>"+"=",O,1)+"0"
+SHOW "SCAN X="+toString(A)+" TO "+toString(B)
+SHOW "FOR SIGN CHANGES, THEN"
+SHOW "ZOOM IN (BISECTION)"
 # complex mode so things like √(X) don't crash for negative X
 a+bi
-(B-A)/200→H
+(B-A)/400→H
+# shift the grid a little so it never lands exactly on a 1/0
+.01234H→T
 0→N
+0→D
 {0}→ʟMPR
-Y₁(A)→P
-For(I,1,200)
-  A+IH→X
+{0}→ʟMPU
+1ᴇ99→G
+A+T→X
+Y₁(X)→P
+For(I,1,400)
+  A+T+IH→X
   Y₁(X)→Q
+  0→S
   If imag(P)=0 and imag(Q)=0
   Then
-    0→S
-    If real(Q)=0
-    Then
-      X→M
-      1→S
-    End
     If real(P)real(Q)<0
     Then
       X-H→L
       X→R
       real(P)→E
-      For(K,1,45)
+      For(K,1,32)
         (L+R)/2→M
         real(Y₁(M))→F
         If EF≤0
@@ -106,34 +185,155 @@ For(I,1,200)
           F→E
         End
       End
-      # a sign change across an asymptote (like 1/X) is not a root
-      abs(Y₁(M))<.0001→S
+      # a zero, or a jump across an asymptote like 1/X?
+      1+(abs(Y₁(M))<.0001)→S
     End
-    If S
+    # touching zeros like (X-2)² don't change sign: look for a dip to 0
+    If S=0 and D=0 and abs(P)<G and abs(P)≤abs(Q) and abs(P)<.01
     Then
-      N+1→N
-      If N=1
-      Then
-        {M}→ʟMPR
-      Else
-        augment(ʟMPR,{M})→ʟMPR
-      End
-      SHOW "SIGN CHANGE NEAR X="+toString(round(M,3))
-      ANS "X="+toString(round(M,9))
+      fMin(abs(Y₁),X,X-2H,X)→M
+      If abs(Y₁(M))<1ᴇ⁻7
+      2→S
     End
   End
+  # edge of the domain, like X=0 for √(X)
+  If (imag(P)=0) xor (imag(Q)=0)
+  Then
+    X-H→L
+    X→R
+    imag(P)=0→E
+    For(K,1,32)
+      (L+R)/2→M
+      If (imag(Y₁(M))=0)=E
+      Then
+        M→L
+      Else
+        M→R
+      End
+    End
+    L→M
+    If not(E)
+    R→M
+    3→S
+  End
+  # ʟMPU: 1 zero, 0 break (asymptote), 2 domain edge
+  If S
+  Then
+    N+1→N
+    M→ʟMPR(N)
+    S-1→ʟMPU(N)
+  End
+  abs(P)→G
   Q→P
+  S→D
 End
-Real
-If N=0
+If O=5
 Then
-  ANS "NO SOLUTIONS FOUND"
-  ANS "FROM X="+toString(A)+" TO "+toString(B)
+  0→C
+  For(K,1,N)
+    If ʟMPU(K)=1
+    Then
+      C+1→C
+      ʟMPR(K)→X
+      prgmZMPNUM
+      ANS "X="+Str9
+    End
+  End
+  If not(C)
+  Then
+    ANS "NO SOLUTIONS FOUND"
+  End
 Else
-  ANS toString(N)+" SOLUTION(S) FOUND"
+  SHOW "BOUNDARY POINTS (=0 OR"
+  SHOW "UNDEFINED):"
+  For(K,1,N)
+    ʟMPR(K)→X
+    prgmZMPNUM
+    SHOW "X="+Str9+sub(" (ZERO)    (BREAK)   (EDGE)   ",1+10((ʟMPU(K)=0)+2(ʟMPU(K)=2)),10)
+  End
+  If not(N)
+  Then
+    SHOW "NONE, SO ONE SIGN EVERYWHERE"
+  End
+  SHOW "TEST ONE X IN EACH PIECE:"
+  seq(0,K,0,N)→ʟMPT
+  For(K,0,N)
+    (A+B)/2→X
+    If N>0 and K=0
+    ʟMPR(1)-1→X
+    If N>0 and K=N
+    ʟMPR(N)+1→X
+    If K>0 and K<N
+    (ʟMPR(K)+ʟMPR(K+1))/2→X
+    Y₁(X)→F
+    If imag(F)=0
+    Then
+      real(F)→F
+      (O=1 and F≤0) or (O=2 and F≥0) or (O=3 and F<0) or (O=4 and F>0)→ʟMPT(K+1)
+    End
+    SHOW "X="+toString(round(X,3))+": "+sub("NO YES",1+3ʟMPT(K+1),3)
+  End
+  # is each boundary point itself a solution?
+  seq(0,K,0,N)→ʟMPQ
+  For(K,1,N)
+    If ʟMPU(K)=1 and O≤2
+    1→ʟMPQ(K)
+    If ʟMPU(K)=2
+    Then
+      Y₁(ʟMPR(K))→F
+      If imag(F)=0
+      (O=1 and real(F)≤0) or (O=2 and real(F)≥0) or (O=3 and real(F)<0) or (O=4 and real(F)>0)→ʟMPQ(K)
+    End
+  End
+  # write the answer in interval notation
+  ""→Str3
+  0→G
+  For(K,0,N)
+    If ʟMPT(K+1) and not(G)
+    Then
+      If length(Str3)
+      Str3+" U "→Str3
+      If K=0
+      Then
+        Str3+"(-INF"→Str3
+      Else
+        ʟMPR(K)→X
+        prgmZMPNUM
+        Str3+sub("([",ʟMPQ(K)+1,1)+Str9→Str3
+      End
+      1→G
+    End
+    If K<N
+    Then
+      If G and not(ʟMPT(K+2) and ʟMPQ(K+1))
+      Then
+        ʟMPR(K+1)→X
+        prgmZMPNUM
+        Str3+","+Str9+sub(")]",ʟMPQ(K+1)+1,1)→Str3
+        0→G
+      End
+      If not(G) and ʟMPQ(K+1) and not(ʟMPT(K+1)) and not(ʟMPT(K+2))
+      Then
+        If length(Str3)
+        Str3+" U "→Str3
+        ʟMPR(K+1)→X
+        prgmZMPNUM
+        Str3+"{"+Str9+"}"→Str3
+      End
+    End
+  End
+  If G
+  Str3+",INF)"→Str3
+  If not(length(Str3))
+  "NO SOLUTION"→Str3
+  If Str3="(-INF,INF)"
+  "ALL REAL NUMBERS"→Str3
+  ANS "SOLUTION: "+Str3
 End
+SHOW "(CHECKED X="+toString(A)+" TO "+toString(B)+")"
+Real
 Pause
-Menu("GRAPH IT?","YES",A9,"NO, MAIN MENU",M)
+Menu("GRAPH IT?","YES",A9,"NO, GO BACK",ZR)
 Lbl A9
 A→U
 B→V
@@ -142,17 +342,418 @@ For(I,1,N)
   Pt-On(ʟMPR(I),0,3,RED)
 End
 TextColor(RED)
-Text(1,2,"X = SOLUTIONS")
+Text(1,2,"X = BOUNDARY POINTS")
 TextColor(BLUE)
 Text(14,2,"LEFT SIDE - RIGHT SIDE")
 Goto Z
 
+# ---------------------------------------------------------------- transformations
+Lbl TR
+Menu("PARENT FUNCTION","Y=X",T1,"Y=X²",T2,"Y=X³",T3,"Y=|X|",T4,"Y=√(X)",T5,"Y=1/X",T6,"BACK",A)
+Lbl T1
+1→F
+Goto TF
+Lbl T2
+2→F
+Goto TF
+Lbl T3
+3→F
+Goto TF
+Lbl T4
+4→F
+Goto TF
+Lbl T5
+5→F
+Goto TF
+Lbl T6
+6→F
+Lbl TF
+ClrHome
+0→θ
+Disp "Y=A*F(B(X-H))+K"
+Prompt A,B,H,K
+If A=0 or B=0
+Disp "A AND B CANNOT BE 0"
+If A=0 or B=0
+Goto Z
+ClrHome
+ANS "== TRANSFORMATIONS =="
+If A<0
+Then
+  ANS "REFLECT OVER THE X-AXIS"
+End
+If abs(A)>1
+Then
+  ANS "VERTICAL STRETCH BY "+toString(abs(A))
+End
+If abs(A)<1
+Then
+  ANS "VERTICAL SHRINK BY "+toString(abs(A))
+End
+If B<0
+Then
+  ANS "REFLECT OVER THE Y-AXIS"
+End
+If abs(B)>1
+Then
+  ANS "HORIZONTAL SHRINK BY 1/"+toString(abs(B))
+End
+If abs(B)<1
+Then
+  ANS "HORIZONTAL STRETCH BY "+toString(1/abs(B))
+End
+If H>0
+Then
+  ANS "SHIFT RIGHT "+toString(H)
+End
+If H<0
+Then
+  ANS "SHIFT LEFT "+toString(abs(H))
+End
+If K>0
+Then
+  ANS "SHIFT UP "+toString(K)
+End
+If K<0
+Then
+  ANS "SHIFT DOWN "+toString(abs(K))
+End
+SHOW "(DO STRETCHES/REFLECTIONS"
+SHOW " FIRST, THEN SHIFTS)"
+If F=6
+Then
+  ANS "ASYMPTOTES: X="+toString(H)+", Y="+toString(K)
+  ANS "DOMAIN: X≠"+toString(H)+", RANGE: Y≠"+toString(K)
+Else
+  ANS "KEY POINT (0,0) MOVES TO ("+toString(H)+","+toString(K)+")"
+End
+If F=1 or F=3
+Then
+  ANS "DOMAIN + RANGE: ALL REALS"
+End
+If F=2 or F=4
+Then
+  ANS "DOMAIN: ALL REALS"
+  ANS "RANGE: Y"+sub("≤≥",1+(A>0),1)+toString(K)
+End
+If F=5
+Then
+  ANS "DOMAIN: X"+sub("≤≥",1+(B>0),1)+toString(H)
+  ANS "RANGE: Y"+sub("≤≥",1+(A>0),1)+toString(K)
+End
+Pause
+Menu("GRAPH IT?","YES",TG,"NO, GO BACK",ZR)
+Lbl TG
+FnOff
+PlotsOff
+If F=1
+"A(B(X-H))+K"→Y₁
+If F=2
+"A(B(X-H))²+K"→Y₁
+If F=3
+"A(B(X-H))³+K"→Y₁
+If F=4
+"Aabs(B(X-H))+K"→Y₁
+If F=5
+"A√(B(X-H))+K"→Y₁
+If F=6
+"A/(B(X-H))+K"→Y₁
+If F=1
+"X"→Y₂
+If F=2
+"X²"→Y₂
+If F=3
+"X³"→Y₂
+If F=4
+"abs(X)"→Y₂
+If F=5
+"√(X)"→Y₂
+If F=6
+"1/X"→Y₂
+GraphColor(1,BLUE)
+GraphColor(2,DARKGRAY)
+AxesOn
+GridOff
+LabelOff
+ExprOff
+⁻1ᴇ90→Xmin
+10→Xmax
+⁻10→Xmin
+⁻1ᴇ90→Ymin
+10→Ymax
+⁻10→Ymin
+1→Xscl
+1→Yscl
+ClrDraw
+DispGraph
+Pt-On(H,K,2,RED)
+TextColor(BLUE)
+Text(1,2,"BLUE: NEW")
+TextColor(DARKGRAY)
+Text(14,2,"GRAY: PARENT")
+Goto Z
+
+# ---------------------------------------------------------------- complete the square
+Lbl AQ
+ClrHome
+0→θ
+Disp "COMPLETE THE SQUARE","FOR AX²+BX+C"
+Prompt A,B,C
+If not(A)
+Disp "A CANNOT BE 0"
+If not(A)
+Goto Z
+ClrHome
+ANS "== COMPLETE THE SQUARE =="
+⁻B/(2A)→H
+C-B²/(4A)→K
+""→Str2
+If A≠1
+toString(A)→Str2
+If A≠1
+Then
+  SHOW "FACTOR "+toString(A)+" OUT OF THE X TERMS:"
+  SHOW toString(A)+"(X²+"+toString(B/A)+"X)+"+toString(C)
+End
+SHOW "HALF OF "+toString(B/A)+" IS "+toString(B/(2A))
+SHOW "SQUARE IT: "+toString((B/(2A))²)
+SHOW "ADD IT INSIDE, SUBTRACT IT"
+SHOW "OUTSIDE (TIMES "+toString(A)+"):"
+SHOW Str2+"(X²+"+toString(B/A)+"X+"+toString((B/(2A))²)+")+"+toString(C)+"-"+toString(B²/(4A))
+SHOW "INSIDE IS A PERFECT SQUARE:"
+POLY {1,B/(2A)}
+ANS "Y="+Str2+"("+Str8+")²"+sub("+-",1+(K<0),1)+toString(abs(K))
+If not(fPart(A) or fPart(B) or fPart(C))
+Then
+  ⁻B→U
+  2A→V
+  prgmZMPFRAC
+  Str9→Str1
+  4AC-B²→U
+  4A→V
+  prgmZMPFRAC
+  ANS "VERTEX: ("+Str1+", "+Str9+")"
+Else
+  ANS "VERTEX: ("+toString(H)+", "+toString(K)+")"
+End
+SHOW "TO SOLVE =0: MOVE K, DIVIDE"
+SHOW "BY A, THEN SQUARE ROOT:"
+⁻K/A→D
+POLY {1,B/(2A)}
+SHOW "("+Str8+")²="+toString(D)
+If D≥0
+Then
+  ANS "X="+toString(H)+"+/-"+toString(√(D))
+Else
+  ANS "X="+toString(H)+"+/-"+toString(√(⁻D))+"[i]"
+End
+Goto Z
+
+# ---------------------------------------------------------------- parabola from 3 points
+Lbl AR
+ClrHome
+0→θ
+Disp "PARABOLA THROUGH 3 POINTS","TYPE LISTS LIKE {1,2,3}"
+Input "X VALUES: ",ʟMPT
+Input "Y VALUES: ",ʟMPU
+If dim(ʟMPT)≠3 or dim(ʟMPU)≠3
+Disp "NEED EXACTLY 3 OF EACH"
+If dim(ʟMPT)≠3 or dim(ʟMPU)≠3
+Goto Z
+ClrHome
+ANS "== Y=AX²+BX+C =="
+SHOW "PLUG EACH POINT IN:"
+{3,3}→dim([B])
+For(I,1,3)
+  ʟMPT(I)²→[B](I,1)
+  ʟMPT(I)→[B](I,2)
+  1→[B](I,3)
+  SHOW toString(ʟMPT(I)²)+"A+"+toString(ʟMPT(I))+"B+C="+toString(ʟMPU(I))
+End
+det([B])→G
+If G=0
+Then
+  ANS "NO PARABOLA: THE X VALUES"
+  ANS "MUST ALL BE DIFFERENT"
+Else
+  SHOW "SOLVE THAT 3X3 SYSTEM:"
+  {0,0,0}→ʟMPS
+  For(K,1,3)
+    [B]→[C]
+    For(I,1,3)
+      ʟMPU(I)→[C](I,K)
+    End
+    round(det([C])/G,9)→ʟMPS(K)
+  End
+  ANS "A="+toString(ʟMPS(1))+" B="+toString(ʟMPS(2))+" C="+toString(ʟMPS(3))
+  POLY ʟMPS
+  ANS "Y="+Str8
+End
+Goto Z
+
+# ---------------------------------------------------------------- vertical motion
+Lbl AV
+Menu("UNITS","FEET (-16T²)",V1,"METERS (-4.9T²)",V2)
+Lbl V1
+16→G
+Goto V3
+Lbl V2
+4.9→G
+Lbl V3
+ClrHome
+0→θ
+Input "START HEIGHT H0=",H
+Input "UP VELOCITY V0=",V
+ClrHome
+ANS "== VERTICAL MOTION =="
+ANS "H(T)="+toString(⁻G)+"T²+"+toString(V)+"T+"+toString(H)
+SHOW "THE TOP IS THE VERTEX:"
+SHOW "T=⁻B/(2A)="+toString(V)+"/"+toString(2G)
+V/(2G)→T
+ANS "MAX HEIGHT "+toString(H+V²/(4G))+" AT T="+toString(T)
+SHOW "GROUND IS WHERE H(T)=0:"
+SHOW "QUADRATIC FORMULA, KEEP T>0"
+V²+4GH→D
+If D<0
+Then
+  ANS "NEVER REACHES THE GROUND"
+Else
+  ANS "HITS THE GROUND AT T="+toString((V+√(D))/(2G))
+End
+Goto Z
+
+# ---------------------------------------------------------------- complex numbers
+Lbl CX
+Menu("COMPLEX NUMBERS","+ - * / COMPLEX",K1,"POWERS OF [i]",K2,"SQRT OF NEGATIVE",K4,"BACK",QD)
+Lbl K1
+ClrHome
+Disp "(A+B[i]) OP (C+D[i])"
+Prompt A,B,C,D
+Menu("OPERATION","ADD +",K5,"SUBTRACT -",K6,"MULTIPLY *",K7,"DIVIDE /",K8)
+Lbl K5
+ClrHome
+0→θ
+ANS "== ADD =="
+SHOW "ADD REAL PARTS: "+toString(A)+"+"+toString(C)
+SHOW "ADD [i] PARTS: "+toString(B)+"+"+toString(D)
+A+C→E
+B+D→F
+Goto K9
+Lbl K6
+ClrHome
+0→θ
+ANS "== SUBTRACT =="
+SHOW "SUBTRACT REAL PARTS: "+toString(A)+"-"+toString(C)
+SHOW "SUBTRACT [i] PARTS: "+toString(B)+"-"+toString(D)
+A-C→E
+B-D→F
+Goto K9
+Lbl K7
+ClrHome
+0→θ
+ANS "== MULTIPLY (FOIL) =="
+SHOW "FIRST: "+toString(AC)
+SHOW "OUTER+INNER: "+toString(AD)+"[i]+"+toString(BC)+"[i]"
+SHOW "LAST: "+toString(BD)+"[i]²="+toString(⁻BD)+" ([i]²=-1)"
+AC-BD→E
+AD+BC→F
+Goto K9
+Lbl K8
+ClrHome
+0→θ
+If C=0 and D=0
+Disp "CANNOT DIVIDE BY 0"
+If C=0 and D=0
+Goto Z
+ANS "== DIVIDE =="
+SHOW "MULTIPLY TOP AND BOTTOM BY"
+SHOW "THE CONJUGATE "+toString(C)+sub("-+",1+(D<0),1)+toString(abs(D))+"[i]"
+C²+D²→G
+SHOW "BOTTOM: "+toString(C)+"²+"+toString(D)+"²="+toString(G)
+SHOW "TOP: "+toString(AC+BD)+"+"+toString(BC-AD)+"[i]"
+(AC+BD)/G→E
+(BC-AD)/G→F
+If not(fPart(A) or fPart(B) or fPart(C) or fPart(D))
+Then
+  AC+BD→U
+  G→V
+  prgmZMPFRAC
+  Str9→Str1
+  BC-AD→U
+  G→V
+  prgmZMPFRAC
+  ANS "EXACT: "+Str1+" + ("+Str9+")[i]"
+End
+Lbl K9
+ANS "= "+toString(E)+sub("+-",1+(F<0),1)+toString(abs(F))+"[i]"
+SHOW "|Z|=√(A²+B²)="+toString(√(E²+F²))
+SHOW "CONJUGATE: "+toString(E)+sub("-+",1+(F<0),1)+toString(abs(F))+"[i]"
+Goto Z
+
+Lbl K2
+ClrHome
+0→θ
+Disp "SIMPLIFY [i]^N"
+Prompt N
+If fPart(N)
+Disp "N MUST BE A WHOLE NUMBER"
+If fPart(N)
+Goto Z
+ClrHome
+ANS "== [i]^"+toString(N)+" =="
+N-4int(N/4)→R
+SHOW "POWERS OF [i] REPEAT EVERY 4:"
+SHOW "[i], -1, -[i], 1, [i], ..."
+SHOW toString(N)+"/4 HAS REMAINDER "+toString(R)
+SHOW "SO [i]^"+toString(N)+"=[i]^"+toString(R)
+ANS "= "+sub("1  [i]  -1 -[i] ",1+3R,3)
+Goto Z
+
+Lbl K4
+ClrHome
+0→θ
+Disp "SIMPLIFY √(N) FOR A","NEGATIVE N LIKE ⁻48"
+Prompt N
+If N≥0 or fPart(N)
+Disp "TYPE A NEGATIVE WHOLE","NUMBER LIKE ⁻48"
+If N≥0 or fPart(N)
+Goto Z
+ClrHome
+ANS "== √("+toString(N)+") =="
+⁻N→M
+SHOW "√("+toString(N)+")=√(⁻1)*√("+toString(M)+")"
+SHOW "=[i]√("+toString(M)+")"
+iPart(√(M))→K
+While fPart(M/K²)
+  K-1→K
+End
+M/K²→M
+If M=1
+Then
+  ANS "= "+toString(K)+"[i]"
+Else
+  If K=1
+  Then
+    ANS "= [i]√("+toString(M)+")"
+  Else
+    SHOW "BIGGEST SQUARE FACTOR: "+toString(K²)
+    ANS "= "+toString(K)+"[i]√("+toString(M)+")"
+  End
+End
+Goto Z
+
+# ================================================================ POLYNOMIALS
+Lbl PY
+Menu("POLYNOMIALS","EXPAND",P1,"FACTOR",P3,"ALL ROOTS (FTA)",PR,"GRAPH FEATURES",PG,"LONG DIVISION",PD,"BUILD FROM ROOTS",PB,"MORE...",PM)
+Lbl PM
+Menu("MORE POLYNOMIALS","BINOMIAL THEOREM",P2,"FOIL",P6,"SYNTHETIC DIV",P5,"BACK",PY)
+
 # ---------------------------------------------------------------- expand anything
 Lbl P1
 ClrHome
-0→θ
 Disp "EXPAND ANY POLYNOMIAL","EX: (X+2)³ OR (2X-1)(X+5)","USE X,T,θ,n FOR X"
 Input "P(X)=",Str1
+Lbl PE
 prgmZMPREAD
 If not(W)
 Disp "THAT IS NOT A POLYNOMIAL","(OR DEGREE IS OVER 10)"
@@ -164,9 +765,364 @@ ANS "EXPAND: "+Str1
 SHOW "HOW: PLUG IN X=0,1,2...12"
 SHOW "THEN USE FINITE DIFFERENCES"
 SHOW "TO REBUILD THE COEFFICIENTS"
-prgmZMPPOLY
+POLY ʟMPP
 ANS "= "+Str8
-ANS "DEGREE "+toString(dim(ʟMPP)-1)+", CONSTANT "+toString(ʟMPP(dim(ʟMPP)))
+ANS "DEGREE "+toString(dim(ʟMPP)-1)
+Goto Z
+
+# ---------------------------------------------------------------- factor anything
+Lbl P3
+ClrHome
+Disp "FACTOR A POLYNOMIAL","EX: X³-7X+6, 6X²+X-2,","X^4-16 (WHOLE NUMBERS)"
+Input "P(X)=",Str1
+Lbl PF
+prgmZMPREAD
+W and dim(ʟMPP)>1→W
+If W
+max(abs(fPart(ʟMPP)))=0→W
+If not(W)
+Disp "NEED A POLYNOMIAL WITH","WHOLE NUMBER COEFFICIENTS"
+If not(W)
+Goto Z
+ClrHome
+0→θ
+POLY ʟMPP
+ANS "== FACTOR "+Str8+" =="
+prgmZMPFACT
+If T
+Then
+  ANS "= "+Str7
+Else
+  ANS "CANNOT BE FACTORED OVER"
+  ANS "THE INTEGERS (IT IS PRIME)"
+End
+Goto Z
+
+# ---------------------------------------------------------------- all roots
+Lbl PR
+ClrHome
+Disp "ALL ROOTS, REAL AND","COMPLEX. EX: X³-1 OR","X^4-5X²+4"
+Input "P(X)=",Str1
+Lbl PQ
+prgmZMPREAD
+W and dim(ʟMPP)>1→W
+If not(W)
+Disp "NEED A POLYNOMIAL OF","DEGREE 1 TO 10"
+If not(W)
+Goto Z
+ClrHome
+0→θ
+POLY ʟMPP
+ANS "== ROOTS OF "+Str8+" =="
+dim(ʟMPP)-1→O
+SHOW "DEGREE "+toString(O)+", SO BY THE"
+SHOW "FUNDAMENTAL THM OF ALGEBRA"
+SHOW "IT HAS "+toString(O)+" ROOTS (COUNTING"
+SHOW "REPEATS AND COMPLEX ONES)"
+# list the possible rational roots
+If max(abs(fPart(ʟMPP)))=0
+Then
+  ʟMPP→ʟMPA
+  While ʟMPA(dim(ʟMPA))=0
+    dim(ʟMPA)-1→dim(ʟMPA)
+  End
+  abs(ʟMPA(dim(ʟMPA)))→C
+  abs(ʟMPA(1))→A
+  ""→Str3
+  0→K
+  For(I,1,min(C,5000))
+    If not(fPart(C/I))
+    Then
+      For(J,1,A)
+        If not(fPart(A/J)) and gcd(I,J)=1 and K<24
+        Then
+          Str3+toString(I)→Str3
+          If J≠1
+          Str3+"/"+toString(J)→Str3
+          Str3+","→Str3
+          K+1→K
+        End
+      End
+    End
+  End
+  If K
+  Then
+    SHOW "POSSIBLE RATIONAL ROOTS:"
+    SHOW "+/- "+sub(Str3,1,length(Str3)-1)
+  End
+End
+prgmZMPROOT
+ʟMPR→ʟMPA
+prgmZMPREAL
+W→E
+If E
+Then
+  SHOW "REAL ROOTS (WHERE THE GRAPH"
+  SHOW "HITS THE X-AXIS):"
+  1→M
+  For(K,1,E)
+    If K<E
+    Then
+      abs(ʟMPR(K+1)-ʟMPR(K))<1ᴇ⁻6→F
+    Else
+      0→F
+    End
+    If F
+    Then
+      M+1→M
+    Else
+      ʟMPR(K)→X
+      prgmZMPNUM
+      "X="+Str9→Str2
+      If M>1
+      Str2+" (MULTIPLICITY "+toString(M)+")"→Str2
+      ANS Str2
+      1→M
+    End
+  End
+End
+If O>E
+Then
+  SHOW "COMPLEX ROOTS COME IN"
+  SHOW "CONJUGATE PAIRS A+/-B[i]:"
+  For(K,1,dim(ʟMPA))
+    If imag(ʟMPA(K))>0
+    Then
+      real(ʟMPA(K))→X
+      prgmZMPNUM
+      Str9→Str2
+      imag(ʟMPA(K))→X
+      prgmZMPNUM
+      ANS "X="+Str2+"+/-"+Str9+"[i]"
+    End
+  End
+End
+ANS toString(E)+" REAL + "+toString(O-E)+" COMPLEX = "+toString(O)+" ROOTS"
+Real
+Goto Z
+
+# ---------------------------------------------------------------- graph features
+Lbl PG
+ClrHome
+Disp "GRAPH FEATURES OF A","POLYNOMIAL. EX: X³-4X"
+Input "P(X)=",Str1
+prgmZMPREAD
+W and dim(ʟMPP)>1→W
+If not(W)
+Disp "NEED A POLYNOMIAL OF","DEGREE 1 TO 10"
+If not(W)
+Goto Z
+ClrHome
+0→θ
+ʟMPP→ʟMPB
+POLY ʟMPP
+ANS "== GRAPH OF "+Str8+" =="
+dim(ʟMPB)-1→O
+ʟMPB(1)→L
+"EVEN"→Str2
+If fPart(O/2)
+"ODD"→Str2
+ANS "DEGREE "+toString(O)+" ("+Str2+"), LEADING "+toString(L)
+"DOWN"→Str3
+If L>0
+"UP"→Str3
+"DOWN"→Str4
+If (L>0 and not(fPart(O/2))) or (L<0 and fPart(O/2))
+"UP"→Str4
+SHOW "END BEHAVIOR COMES FROM THE"
+SHOW "DEGREE + LEADING COEFFICIENT:"
+ANS "LEFT END "+Str4+", RIGHT END "+Str3
+ANS "Y-INTERCEPT: (0,"+toString(ʟMPB(O+1))+")"
+prgmZMPROOT
+prgmZMPREAL
+W→E
+ʟMPR→ʟMPA
+If E
+Then
+  SHOW "ODD MULTIPLICITY: CROSSES"
+  SHOW "EVEN MULTIPLICITY: TOUCHES"
+  1→M
+  For(K,1,E)
+    If K<E
+    Then
+      abs(ʟMPA(K+1)-ʟMPA(K))<1ᴇ⁻6→F
+    Else
+      0→F
+    End
+    If F
+    Then
+      M+1→M
+    Else
+      ʟMPA(K)→X
+      prgmZMPNUM
+      "CROSSES"→Str2
+      If not(fPart(M/2))
+      "TOUCHES"→Str2
+      ANS "ZERO X="+Str9+" "+Str2+" (MULT "+toString(M)+")"
+      1→M
+    End
+  End
+Else
+  ANS "NO REAL ZEROS"
+End
+dim(ʟMPB)-1→O
+ANS "AT MOST "+toString(O-1)+" TURNING POINTS"
+0→T
+{0}→ʟMPC
+If O≥2
+Then
+  SHOW "TURNING POINTS ARE WHERE"
+  SHOW "THE SLOPE (DERIVATIVE) IS 0"
+  seq(ʟMPB(K)(O+1-K),K,1,O)→ʟMPP
+  prgmZMPROOT
+  prgmZMPREAL
+  W→T
+  ʟMPR→ʟMPC
+  ʟMPB→ʟMPZ
+  For(M,1,T)
+    ʟMPC(M)-.001→X
+    prgmZMPEVAL
+    W→L
+    ʟMPC(M)+.001→X
+    prgmZMPEVAL
+    W→R
+    ʟMPC(M)→X
+    prgmZMPEVAL
+    W→Y
+    If L<Y and R<Y
+    Then
+      ANS "LOCAL MAX ("+toString(round(X,4))+","+toString(round(Y,4))+")"
+    End
+    If L>Y and R>Y
+    Then
+      ANS "LOCAL MIN ("+toString(round(X,4))+","+toString(round(Y,4))+")"
+    End
+  End
+End
+Real
+Pause
+Menu("GRAPH IT?","YES",PH,"NO, GO BACK",ZR)
+Lbl PH
+min(augment(ʟMPA,ʟMPC))→U
+max(augment(ʟMPA,ʟMPC))→V
+(V-U)/4+1→Y
+U-Y→U
+V+Y→V
+String►Equ(Str1,Y₁)
+prgmZMPGRAPH
+For(K,1,E)
+  Pt-On(ʟMPA(K),0,3,RED)
+End
+ʟMPB→ʟMPZ
+For(K,1,T)
+  ʟMPC(K)→X
+  prgmZMPEVAL
+  Pt-On(X,W,2,GREEN)
+End
+TextColor(RED)
+Text(1,2,"X = ZEROS")
+TextColor(GREEN)
+Text(14,2,"BOX = TURNING POINTS")
+Goto Z
+
+# ---------------------------------------------------------------- long division
+Lbl PD
+ClrHome
+Disp "LONG DIVISION P(X)/D(X)","EX: P=2X³+3X²-1, D=X²+1"
+Input "P(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPA
+W→E
+Input "D(X)=",Str1
+prgmZMPREAD
+If not(E and W) or max(abs(ʟMPP))=0
+Disp "NEED TWO POLYNOMIALS","(AND D(X) CANNOT BE 0)"
+If not(E and W) or max(abs(ʟMPP))=0
+Goto Z
+ʟMPP→ʟMPQ
+ʟMPA→ʟMPP
+ClrHome
+0→θ
+POLY ʟMPP
+Str8→Str6
+POLY ʟMPQ
+ANS "== ("+Str6+")/("+Str8+") =="
+dim(ʟMPP)-dim(ʟMPQ)+1→L
+If L<1
+Then
+  ANS "THE DIVISOR HAS A BIGGER"
+  ANS "DEGREE: QUOTIENT 0,"
+  ANS "REMAINDER "+Str6
+Else
+  seq(0,I,1,L)→ʟMPS
+  For(I,1,L)
+    ʟMPP(I)/ʟMPQ(1)→ʟMPS(I)
+    POLY seq((J=1)ʟMPS(I),J,1,L-I+1)
+    SHOW "DIVIDE LEADING TERMS: "+Str8
+    For(J,1,dim(ʟMPQ))
+      ʟMPP(I+J-1)-ʟMPS(I)ʟMPQ(J)→ʟMPP(I+J-1)
+    End
+    0→ʟMPP(I)
+    If dim(ʟMPP)>I
+    Then
+      POLY round(seq(ʟMPP(J),J,I+1,dim(ʟMPP)),9)
+      SHOW "MULTIPLY, SUBTRACT: "+Str8
+    End
+  End
+  POLY ʟMPS
+  Str8→Str6
+  ANS "QUOTIENT: "+Str6
+  If dim(ʟMPQ)=1
+  Then
+    {0}→ʟMPP
+  Else
+    round(seq(ʟMPP(J),J,L+1,dim(ʟMPP)),9)→ʟMPP
+  End
+  POLY ʟMPP
+  ANS "REMAINDER: "+Str8
+  If Str8≠"0"
+  Then
+    Str8→Str5
+    POLY ʟMPQ
+    ANS "ANSWER: "+Str6+" + ("+Str5+")/("+Str8+")"
+  End
+End
+Goto Z
+
+# ---------------------------------------------------------------- build from roots
+Lbl PB
+ClrHome
+a+bi
+Disp "POLYNOMIAL FROM ITS ROOTS","TYPE A LIST: {2,⁻1,3[i]}","(CONJUGATES ADDED FOR YOU)"
+Input "ROOTS: ",ʟMPA
+Input "LEADING COEFF: ",L
+ClrHome
+0→θ
+ANS "== BUILD FROM ROOTS =="
+{1}→ʟMPP
+For(K,1,dim(ʟMPA))
+  ʟMPA(K)→Z
+  If imag(Z)=0
+  Then
+    POLY {1,⁻real(Z)}
+    SHOW "ROOT "+toString(real(Z))+" GIVES ("+Str8+")"
+    {1,⁻real(Z)}→ʟMPQ
+    prgmZMPMUL
+  End
+  If imag(Z)>0 or (imag(Z)<0 and min(abs(ʟMPA-conj(Z)))>1ᴇ⁻9)
+  Then
+    {1,⁻2real(Z),abs(Z)²}→ʟMPQ
+    POLY ʟMPQ
+    SHOW toString(Z)+" + CONJUGATE GIVE"
+    SHOW "("+Str8+")"
+    prgmZMPMUL
+  End
+End
+round(real(LʟMPP),9)→ʟMPP
+POLY ʟMPP
+ANS "P(X)="+Str8
+SHOW "DEGREE "+toString(dim(ʟMPP)-1)+" = NUMBER OF ROOTS"
+Real
 Goto Z
 
 # ---------------------------------------------------------------- binomial theorem
@@ -180,8 +1136,7 @@ Disp "NEED A≠0, B≠0, AND","N A WHOLE NUMBER 0-30"
 If A=0 or B=0 or N<0 or N>30 or fPart(N)
 Goto Z
 ClrHome
-{A,B}→ʟMPP
-prgmZMPPOLY
+POLY {A,B}
 ANS "== EXPAND ("+Str8+")^"+toString(N)+" =="
 SHOW "BINOMIAL THEOREM:"
 SHOW "TERM K = NCK*(AX)^(N-K)*B^K"
@@ -194,8 +1149,7 @@ For(K,0,N)
   SHOW "K="+toString(K)+": "+toString(C)+"*"+toString(A^(N-K))+"*"+toString(B^K)+"="+toString(ʟMPR(K+1))
 End
 SHOW "PASCAL ROW: "+Str5
-ʟMPR→ʟMPP
-prgmZMPPOLY
+POLY ʟMPR
 ANS "= "+Str8
 Goto Z
 
@@ -206,11 +1160,9 @@ ClrHome
 Disp "MULTIPLY (AX+B)(CX+D)"
 Prompt A,B,C,D
 ClrHome
-{A,B}→ʟMPP
-prgmZMPPOLY
+POLY {A,B}
 Str8→Str6
-{C,D}→ʟMPP
-prgmZMPPOLY
+POLY {C,D}
 ANS "== ("+Str6+")("+Str8+") =="
 SHOW "F: FIRSTS "+toString(A)+"X*"+toString(C)+"X="+toString(AC)+"X²"
 SHOW "O: OUTERS "+toString(A)+"X*"+toString(D)+"="+toString(AD)+"X"
@@ -218,12 +1170,11 @@ SHOW "I: INNERS "+toString(B)+"*"+toString(C)+"X="+toString(BC)+"X"
 SHOW "L: LASTS "+toString(B)+"*"+toString(D)+"="+toString(BD)
 SHOW "COMBINE THE MIDDLE:"
 SHOW toString(AD)+"X+"+toString(BC)+"X="+toString(AD+BC)+"X"
-{AC,AD+BC,BD}→ʟMPP
-prgmZMPPOLY
+POLY {AC,AD+BC,BD}
 ANS "= "+Str8
 Goto Z
 
-# ---------------------------------------------------------------- divide by (X-R)
+# ---------------------------------------------------------------- synthetic division
 Lbl P5
 ClrHome
 0→θ
@@ -238,11 +1189,9 @@ Prompt R
 ClrHome
 0→θ
 ʟMPP→ʟMPT
-{1,⁻R}→ʟMPP
-prgmZMPPOLY
+POLY {1,⁻R}
 Str8→Str6
-ʟMPT→ʟMPP
-prgmZMPPOLY
+POLY ʟMPT
 ANS "== ("+Str8+")/("+Str6+") =="
 dim(ʟMPT)→N
 SHOW "SYNTHETIC DIVISION BY "+toString(R)
@@ -254,8 +1203,7 @@ For(K,2,N)
 End
 ʟMPR(N)→H
 N-1→dim(ʟMPR)
-ʟMPR→ʟMPP
-prgmZMPPOLY
+POLY ʟMPR
 ANS "QUOTIENT: "+Str8
 ANS "REMAINDER: "+toString(H)
 SHOW "REMAINDER THEOREM: P("+toString(R)+")="+toString(H)
@@ -265,198 +1213,441 @@ Then
 End
 Goto Z
 
-# ---------------------------------------------------------------- factor anything
-Lbl P3
+# ================================================================ RATIONAL (CH 7)
+Lbl RF
+Menu("RATIONAL (CH 7)","GRAPH FEATURES",R1,"SIMPLIFY",R2,"MULTIPLY/DIVIDE",R3,"ADD/SUBTRACT",R4,"SOLVE EQUATION",A8,"BACK",M)
+
+# ---------------------------------------------------------------- rational graph
+Lbl R1
 ClrHome
-0→θ
-Disp "FACTOR A POLYNOMIAL","EX: X³-7X+6, 6X²+X-2,","X^4-16 (WHOLE NUMBERS)"
-Input "P(X)=",Str1
+Disp "F(X)=N(X)/D(X)","EX: N=X²-4, D=X²-X-2","(WHOLE # COEFFICIENTS)"
+1→E
+Input "N(X)=",Str1
 prgmZMPREAD
-W and dim(ʟMPP)>1→W
-If W
-max(abs(fPart(ʟMPP)))=0→W
-If not(W)
-Disp "NEED A POLYNOMIAL WITH","WHOLE NUMBER COEFFICIENTS"
-If not(W)
+ʟMPP→ʟMPA
+E and W and max(abs(fPart(ʟMPP)))=0→E
+Str1→Str3
+Input "D(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPB
+E and W and max(abs(fPart(ʟMPP)))=0 and max(abs(ʟMPP))>0→E
+If not(E)
+Disp "NEED 2 POLYNOMIALS WITH","WHOLE NUMBER COEFFICIENTS"
+If not(E)
 Goto Z
+"("+Str3+")/("+Str1+")"→Str2
 ClrHome
 0→θ
-prgmZMPPOLY
-ANS "== FACTOR "+Str8+" =="
-""→Str7
+ANS "F(X)="+Str2
+SHOW "STEP 1: FACTOR TOP + BOTTOM"
+ʟMPA→ʟMPP
+prgmZMPFQ
+SHOW "TOP: "+Str7
+ʟMPB→ʟMPP
+prgmZMPFQ
+SHOW "BOTTOM: "+Str7
+ʟMPB→ʟMPP
+prgmZMPRSTR
+If length(Str3)
+Then
+  ANS "DOMAIN: X≠"+Str3
+Else
+  ANS "DOMAIN: ALL REAL NUMBERS"
+End
+prgmZMPRAT
+# holes come from factors that cancel
 0→T
-# Step 1: greatest common factor
-abs(ʟMPP(1))→G
-For(I,2,dim(ʟMPP))
-  gcd(G,abs(ʟMPP(I)))→G
-End
-If ʟMPP(1)<0
-⁻G→G
-If G≠1
+{0}→ʟMPJ
+{0}→ʟMPK
+If dim(ʟMPG)>1
 Then
-  ʟMPP/G→ʟMPP
-  SHOW "PULL OUT THE GCF: "+toString(G)
-  If G=⁻1
-  Then
-    "-"→Str7
-  Else
-    toString(G)→Str7
-  End
-  1→T
-End
-# Step 2: pull out powers of X
-0→E
-While ʟMPP(dim(ʟMPP))=0
-  dim(ʟMPP)-1→dim(ʟMPP)
-  E+1→E
-End
-If E
-Then
-  Str7+"X"→Str7
-  If E>1
-  Str7+"^"+toString(E)→Str7
-  SHOW "PULL OUT X^"+toString(E)
-  1→T
-End
-# Step 3: rational root theorem until a quadratic is left
-If dim(ʟMPP)>3
-Then
-  SHOW "RATIONAL ROOT THEOREM:"
-  SHOW "TRY X=+/-(FACTOR OF LAST)"
-  SHOW "       /(FACTOR OF FIRST)"
-End
-1→F
-While F and dim(ʟMPP)>3
-  0→F
-  dim(ʟMPP)-1→N
-  abs(ʟMPP(N+1))→C
-  ʟMPP(1)→A
-  For(I,1,C)
-    If not(F) and not(fPart(C/I))
+  ʟMPG→ʟMPP
+  prgmZMPFQ
+  SHOW "CANCEL "+Str7+": HOLES"
+  0→T
+  ʟMPG→ʟMPP
+  prgmZMPROOT
+  prgmZMPREAL
+  W→O
+  For(K,1,O)
+    ʟMPR(K)→X
+    ʟMPA→ʟMPZ
+    prgmZMPEVAL
+    W→M
+    ʟMPB→ʟMPZ
+    prgmZMPEVAL
+    If W≠0
     Then
-      For(J,1,A)
-        If not(F) and not(fPart(A/J)) and gcd(I,J)=1
-        Then
-          For(S,⁻1,1,2)
-            If not(F)
-            Then
-              # J^N * P(SI/J), done in whole numbers so it is exact
-              0→H
-              For(K,1,N+1)
-                H+ʟMPP(K)(SI)^(N+1-K)J^(K-1)→H
-              End
-              If H=0
-              Then
-                SI→P
-                J→Q
-                1→F
-              End
-            End
-          End
-        End
-      End
+      T+1→T
+      X→ʟMPJ(T)
+      M/W→ʟMPK(T)
+      prgmZMPNUM
+      Str9→Str4
+      ʟMPK(T)→X
+      prgmZMPNUM
+      ANS "HOLE AT ("+Str4+","+Str9+")"
+      ʟMPJ(T)→X
     End
-  End
-  If F
-  Then
-    # divide by (QX-P)
-    seq(0,X,1,N)→ʟMPR
-    ʟMPP(1)/Q→ʟMPR(1)
-    For(K,2,N)
-      (ʟMPP(K)+PʟMPR(K-1))/Q→ʟMPR(K)
-    End
-    toString(P)→Str5
-    If Q≠1
-    Str5+"/"+toString(Q)→Str5
-    {Q,⁻P}→ʟMPP
-    prgmZMPPOLY
-    "("+Str8+")"→Str6
-    SHOW "X="+Str5+" MAKES IT 0,"
-    SHOW "SO "+Str6+" IS A FACTOR"
-    Str7+Str6→Str7
-    1→T
-    ʟMPR→ʟMPP
-    prgmZMPPOLY
-    SHOW "DIVIDE IT OUT: "+Str8
   End
 End
-# Step 4: what is left
-If dim(ʟMPP)=3
+# vertical asymptotes: zeros of the simplified bottom
+SHOW "ZEROS OF THE NEW BOTTOM ARE"
+SHOW "VERTICAL ASYMPTOTES:"
+0→R
+{0}→ʟMPV
+If dim(ʟMPB)>1
 Then
-  ʟMPP(1)→A
-  ʟMPP(2)→B
-  ʟMPP(3)→C
-  prgmZMPPOLY
-  AC→E
-  SHOW "AC METHOD ON "+Str8+":"
-  SHOW "A*C="+toString(E)+". FIND 2 NUMBERS"
-  SHOW "THAT MULTIPLY TO "+toString(E)
-  SHOW "AND ADD TO "+toString(B)
-  0→F
-  For(I,1,√(abs(E)))
-    If not(F) and not(fPart(E/I))
+  ʟMPB→ʟMPP
+  prgmZMPROOT
+  prgmZMPREAL
+  W→O
+  For(K,1,O)
+    If K=1 or abs(ʟMPR(K)-ʟMPR(max(1,K-1)))>1ᴇ⁻6
     Then
-      If I+E/I=B
-      Then
-        I→P
-        E/I→Q
-        1→F
-      End
-      If not(F) and ⁻I-E/I=B
-      Then
-        ⁻I→P
-        ⁻E/I→Q
-        1→F
-      End
+      R+1→R
+      ʟMPR(K)→ʟMPV(R)
+      ʟMPR(K)→X
+      prgmZMPNUM
+      ANS "VERTICAL ASYMPTOTE X="+Str9
     End
   End
-  If F
-  Then
-    SHOW "FOUND: "+toString(P)+" AND "+toString(Q)
-    SHOW "SPLIT: "+toString(A)+"X²+"+toString(P)+"X+"+toString(Q)+"X+"+toString(C)
-    gcd(A,abs(P))→G
-    A/G→R
-    P/G→S
-    Q/R→H
-    {R,S}→ʟMPP
-    prgmZMPPOLY
-    Str8→Str6
-    SHOW "GROUP: "+toString(G)+"X("+Str6+")+"+toString(H)+"("+Str6+")"
-    {G,H}→ʟMPP
-    prgmZMPPOLY
-    If G=R and H=S
+End
+If not(R)
+Then
+  ANS "NO VERTICAL ASYMPTOTES"
+End
+# end behavior: compare degrees
+dim(ʟMPA)→E
+dim(ʟMPB)→L
+SHOW "COMPARE DEGREES: TOP "+toString(E-1)+", BOTTOM "+toString(L-1)
+If E<L
+Then
+  ANS "HORIZONTAL ASYMPTOTE Y=0"
+End
+If E=L
+Then
+  SHOW "SAME DEGREE: RATIO OF THE"
+  SHOW "LEADING COEFFICIENTS"
+  ʟMPA(1)/ʟMPB(1)→X
+  prgmZMPNUM
+  ANS "HORIZONTAL ASYMPTOTE Y="+Str9
+End
+If E=L+1
+Then
+  SHOW "TOP IS 1 DEGREE BIGGER:"
+  SHOW "DIVIDE TO GET A SLANT LINE"
+  ʟMPA→ʟMPP
+  ʟMPB→ʟMPQ
+  prgmZMPDIV
+  ʟMPS→ʟMPH
+  POLY ʟMPS
+  ANS "SLANT ASYMPTOTE Y="+Str8
+End
+If E>L+1
+Then
+  ANS "NO HORIZONTAL OR SLANT"
+  ANS "ASYMPTOTE"
+End
+# intercepts
+0→O
+If dim(ʟMPA)>1
+Then
+  ʟMPA→ʟMPP
+  prgmZMPROOT
+  prgmZMPREAL
+  For(K,1,W)
+    If K=1 or abs(ʟMPR(K)-ʟMPR(max(1,K-1)))>1ᴇ⁻6
     Then
-      SHOW "PERFECT SQUARE!"
-      Str7+"("+Str6+")²"→Str7
-    Else
-      Str7+"("+Str8+")("+Str6+")"→Str7
+      O+1→O
+      ʟMPR(K)→X
+      prgmZMPNUM
+      ANS "X-INTERCEPT ("+Str9+",0)"
     End
-    1→T
-  Else
-    SHOW "NO PAIR WORKS, SO "+Str8
-    SHOW "DOESNT FACTOR ANY MORE"
-    Str7+"("+Str8+")"→Str7
   End
+End
+If not(O)
+Then
+  ANS "NO X-INTERCEPTS"
+End
+0→X
+ʟMPB→ʟMPZ
+prgmZMPEVAL
+W→M
+ʟMPG→ʟMPZ
+prgmZMPEVAL
+If M≠0 and W≠0
+Then
+  ʟMPA→ʟMPZ
+  prgmZMPEVAL
+  W/M→X
+  prgmZMPNUM
+  ANS "Y-INTERCEPT (0,"+Str9+")"
 Else
-  If dim(ʟMPP)>1
-  Then
-    prgmZMPPOLY
-    If dim(ʟMPP)>3
-    Then
-      SHOW "NO MORE RATIONAL ROOTS"
-    End
-    Str7+"("+Str8+")"→Str7
-  End
+  ANS "NO Y-INTERCEPT"
 End
-If T
+Real
+Pause
+Menu("GRAPH IT?","YES",RG,"NO, GO BACK",ZR)
+Lbl RG
+⁻10→U
+10→V
+If R
 Then
-  ANS "= "+Str7
-Else
-  ANS "CANNOT BE FACTORED OVER"
-  ANS "THE INTEGERS (IT IS PRIME)"
+  min(ʟMPV)-6→U
+  max(ʟMPV)+6→V
 End
+String►Equ(Str2,Y₁)
+FnOff
+PlotsOff
+FnOn 1
+GraphColor(1,BLUE)
+AxesOn
+GridOff
+LabelOff
+ExprOff
+⁻1ᴇ90→Xmin
+V→Xmax
+U→Xmin
+(V-U)/10→Xscl
+⁻1ᴇ90→Ymin
+10→Ymax
+⁻10→Ymin
+2→Yscl
+ClrDraw
+DispGraph
+For(K,1,R)
+  Vertical ʟMPV(K),RED
+End
+If E=L
+Horizontal ʟMPA(1)/ʟMPB(1),GREEN
+If E<L
+Horizontal 0,GREEN
+If E=L+1
+Then
+  POLY ʟMPH
+  String►Equ(Str8,Y₂)
+  FnOff 2
+  DrawF Y₂,GREEN
+End
+For(K,1,T)
+  Circle(ʟMPJ(K),ʟMPK(K),3ΔX,BLACK)
+End
+TextColor(RED)
+Text(1,2,"RED = VERTICAL ASYMPTOTES")
+TextColor(GREEN)
+Text(14,2,"GREEN = HORIZ/SLANT")
 Goto Z
 
+# ---------------------------------------------------------------- simplify
+Lbl R2
+ClrHome
+Disp "SIMPLIFY N(X)/D(X)","EX: N=X²-9, D=X²+X-6"
+1→E
+Input "N(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPA
+E and W and max(abs(fPart(ʟMPP)))=0→E
+Str1→Str3
+Input "D(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPB
+E and W and max(abs(fPart(ʟMPP)))=0 and max(abs(ʟMPP))>0→E
+If not(E)
+Disp "NEED 2 POLYNOMIALS WITH","WHOLE NUMBER COEFFICIENTS"
+If not(E)
+Goto Z
+ClrHome
+0→θ
+ANS "SIMPLIFY ("+Str3+")/("+Str1+")"
+ʟMPB→ʟMPP
+prgmZMPRSTR
+Str3→Str2
+Goto RR
+
+# ---------------------------------------------------------------- multiply / divide
+Lbl R3
+Menu("OPERATION","MULTIPLY *",R5,"DIVIDE /",R6)
+Lbl R5
+1→L
+Goto R7
+Lbl R6
+2→L
+Lbl R7
+ClrHome
+Disp "(A/B) OP (C/D)","EACH IS A POLYNOMIAL"
+1→E
+Input "A(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPA
+E and W and max(abs(fPart(ʟMPP)))=0→E
+Input "B(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPB
+E and W and max(abs(fPart(ʟMPP)))=0 and max(abs(ʟMPP))>0→E
+Input "C(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPC
+E and W and max(abs(fPart(ʟMPP)))=0 and (L=1 or max(abs(ʟMPP))>0)→E
+Input "D(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPD
+E and W and max(abs(fPart(ʟMPP)))=0 and max(abs(ʟMPP))>0→E
+If not(E)
+Disp "NEED POLYNOMIALS WITH","WHOLE NUMBER COEFFICIENTS"
+If not(E)
+Goto Z
+ClrHome
+0→θ
+ANS "== "+sub("MULTIPLYDIVIDE",1+8(L=2),8-2(L=2))+" =="
+# x can't make any bottom 0 (or the flipped top, when dividing)
+ʟMPB→ʟMPP
+ʟMPD→ʟMPQ
+prgmZMPMUL
+If L=2
+Then
+  ʟMPC→ʟMPQ
+  prgmZMPMUL
+  SHOW "DIVIDING: FLIP THE SECOND"
+  SHOW "FRACTION, THEN MULTIPLY"
+  ʟMPC→ʟMPP
+  ʟMPD→ʟMPC
+  ʟMPP→ʟMPD
+  ʟMPB→ʟMPP
+  ʟMPC→ʟMPQ
+  prgmZMPMUL
+  ʟMPD→ʟMPQ
+  prgmZMPMUL
+End
+prgmZMPRSTR
+Str3→Str2
+SHOW "MULTIPLY TOPS, MULTIPLY BOTTOMS"
+ʟMPA→ʟMPP
+ʟMPC→ʟMPQ
+prgmZMPMUL
+ʟMPP→ʟMPA
+ʟMPB→ʟMPP
+ʟMPD→ʟMPQ
+prgmZMPMUL
+ʟMPP→ʟMPB
+Goto RR
+
+# ---------------------------------------------------------------- add / subtract
+Lbl R4
+Menu("OPERATION","ADD +",R8,"SUBTRACT -",R9)
+Lbl R8
+1→L
+Goto RA
+Lbl R9
+⁻1→L
+Lbl RA
+ClrHome
+Disp "(A/B) OP (C/D)","EACH IS A POLYNOMIAL"
+1→E
+Input "A(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPA
+E and W and max(abs(fPart(ʟMPP)))=0→E
+Input "B(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPB
+E and W and max(abs(fPart(ʟMPP)))=0 and max(abs(ʟMPP))>0→E
+Input "C(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPC
+E and W and max(abs(fPart(ʟMPP)))=0→E
+Input "D(X)=",Str1
+prgmZMPREAD
+ʟMPP→ʟMPD
+E and W and max(abs(fPart(ʟMPP)))=0 and max(abs(ʟMPP))>0→E
+If not(E)
+Disp "NEED POLYNOMIALS WITH","WHOLE NUMBER COEFFICIENTS"
+If not(E)
+Goto Z
+ClrHome
+0→θ
+ANS "== "+sub("ADDSUBTRACT",1+3(L<0),3+5(L<0))+" =="
+ʟMPB→ʟMPP
+ʟMPD→ʟMPQ
+prgmZMPMUL
+prgmZMPRSTR
+Str3→Str2
+# LCD = B*(D/G) where G is what the bottoms share
+ʟMPB→ʟMPP
+ʟMPD→ʟMPQ
+prgmZMPGCD
+ʟMPP→ʟMPG
+ʟMPB→ʟMPP
+ʟMPG→ʟMPQ
+prgmZMPDIV
+ʟMPS→ʟMPH
+ʟMPD→ʟMPP
+ʟMPG→ʟMPQ
+prgmZMPDIV
+ʟMPS→ʟMPJ
+ʟMPB→ʟMPP
+ʟMPJ→ʟMPQ
+prgmZMPMUL
+ʟMPP→ʟMPK
+prgmZMPFQ
+SHOW "COMMON DENOMINATOR: "+Str7
+ʟMPA→ʟMPP
+ʟMPJ→ʟMPQ
+prgmZMPMUL
+ʟMPP→ʟMPA
+ʟMPC→ʟMPP
+ʟMPH→ʟMPQ
+prgmZMPMUL
+ʟMPP→ʟMPC
+POLY ʟMPA
+SHOW "TOP 1 BECOMES "+Str8
+POLY ʟMPC
+SHOW "TOP 2 BECOMES "+Str8
+While dim(ʟMPA)<dim(ʟMPC)
+  augment({0},ʟMPA)→ʟMPA
+End
+While dim(ʟMPC)<dim(ʟMPA)
+  augment({0},ʟMPC)→ʟMPC
+End
+ʟMPA+LʟMPC→ʟMPA
+While dim(ʟMPA)>1 and ʟMPA(1)=0
+  seq(ʟMPA(I),I,2,dim(ʟMPA))→ʟMPA
+End
+POLY ʟMPA
+SHOW "COMBINE THE TOPS: "+Str8
+ʟMPK→ʟMPB
+
+# Shared ending: factor, cancel, show the simplified fraction.
+# Input: ʟMPA top, ʟMPB bottom, Str2 = restrictions
+Lbl RR
+ʟMPA→ʟMPP
+prgmZMPFQ
+Str7→Str4
+ʟMPB→ʟMPP
+prgmZMPFQ
+SHOW "FACTOR: "+Str4+" / "+Str7
+prgmZMPRAT
+If dim(ʟMPG)>1
+Then
+  ʟMPG→ʟMPP
+  prgmZMPFQ
+  SHOW "CANCEL THE COMMON "+Str7
+End
+ʟMPA→ʟMPP
+prgmZMPFQ
+Str7→Str4
+ʟMPB→ʟMPP
+prgmZMPFQ
+If Str7="1"
+Then
+  ANS "= "+Str4
+Else
+  ANS "= "+Str4+" / "+Str7
+End
+If length(Str2)
+Then
+  ANS "X≠"+Str2
+End
+Goto Z
 
 # ---------------------------------------------------------------- quadratic
 Lbl A1
@@ -574,10 +1765,13 @@ End
 ANS "Y-INTERCEPT: (0,"+toString(C)+")"
 If D≥0
 Then
-  ANS "FACTORED: "+toString(A)+"(X-"+toString(P)+")(X-"+toString(Q)+")"
+  POLY {1,⁻P}
+  Str8→Str2
+  POLY {1,⁻Q}
+  ANS "FACTORED: "+toString(A)+"("+Str2+")("+Str8+")"
 End
 Pause
-Menu("GRAPH IT?","YES",A7,"NO, MAIN MENU",M)
+Menu("GRAPH IT?","YES",A7,"NO, GO BACK",ZR)
 Lbl A7
 "AX²+BX+C"→Y₁
 max(4,2abs(P-Q))→S
@@ -1092,7 +2286,7 @@ Disp "A=FIRST TERM","R=COMMON RATIO","N=WHICH TERM"
 Prompt A,R,N
 ClrHome
 ANS "== GEOMETRIC =="
-SHOW "TERMS: "+toString(A)+", "+toString(AR)+", "+toString(AR²)+", "+toString(AR³)+"..."
+SHOW "TERMS: "+toString(A)+", "+toString(AR)+", "+toString(ARR)+", "+toString(AR³)+"..."
 SHOW "AN=A1*R^(N-1)"
 SHOW "="+toString(A)+"*"+toString(R)+"^"+toString(N-1)
 AR^(N-1)→T
@@ -1332,7 +2526,7 @@ Else
 End
 ANS "TYPE: "+Str2+" "+Str1
 Pause
-Menu("DRAW IT?","YES",GD,"NO, MAIN MENU",M)
+Menu("DRAW IT?","YES",GD,"NO, GO BACK",ZR)
 Lbl GD
 # Put corner C at (0,0), corner B at (A,0), corner A above them
 Bcos(F)→P
@@ -1442,29 +2636,29 @@ If R≤0 or H<0
 Goto Z
 ClrHome
 ANS "== CIRCLE =="
-SHOW "AREA=πR²="+toString(R²)+"π"
-ANS "AREA="+toString(πR²)
+SHOW "AREA=πR²="+toString(RR)+"π"
+ANS "AREA="+toString(πRR)
 SHOW "CIRCUMFERENCE=2πR="+toString(2R)+"π"
 ANS "CIRCUMFERENCE="+toString(2πR)
 ANS "== SPHERE =="
 SHOW "VOLUME=(4/3)πR³"
 ANS "VOLUME="+toString(4πR³/3)
 SHOW "SURFACE=4πR²"
-ANS "SURFACE="+toString(4πR²)
+ANS "SURFACE="+toString(4πRR)
 If H>0
 Then
   ANS "== CYLINDER =="
-  SHOW "VOLUME=πR²H="+toString(R²H)+"π"
-  ANS "VOLUME="+toString(πR²H)
+  SHOW "VOLUME=πR²H="+toString(RRH)+"π"
+  ANS "VOLUME="+toString(πRRH)
   SHOW "SURFACE=2πR²+2πRH"
-  ANS "SURFACE="+toString(2πR²+2πRH)
+  ANS "SURFACE="+toString(2πRR+2πRH)
   ANS "== CONE =="
-  √(R²+H²)→L
+  √(RR+H²)→L
   SHOW "SLANT L=√(R²+H²)="+toString(L)
   SHOW "VOLUME=πR²H/3"
-  ANS "VOLUME="+toString(πR²H/3)
+  ANS "VOLUME="+toString(πRRH/3)
   SHOW "SURFACE=πR²+πRL"
-  ANS "SURFACE="+toString(πR²+πRL)
+  ANS "SURFACE="+toString(πRR+πRL)
 End
 Goto Z
 
@@ -1492,11 +2686,12 @@ For(I,1,4)
   10^(⁻I)→H
   SHOW "H="+toString(H)+": "+toString((Y₁(A+H)-F)/H)
 End
-nDeriv(Y₁,X,A)→M
+round(nDeriv(Y₁,X,A,1ᴇ⁻5),7)→M
 ANS "F'("+toString(A)+")="+toString(M)
 SHOW "TANGENT: Y=F(A)+F'(A)(X-A)"
-F-MA→B
-ANS "TANGENT: Y="+toString(M)+"X+"+toString(B)
+round(F-MA,7)→B
+POLY {M,B}
+ANS "TANGENT: Y="+Str8
 (Y₁(A+.001)-2F+Y₁(A-.001))/.000001→S
 ANS "F''("+toString(A)+")="+toString(round(S,4))
 If abs(S)<.0001
@@ -1515,7 +2710,7 @@ Then
   ANS "F'=0: CRITICAL POINT!"
 End
 Pause
-Menu("GRAPH IT?","YES",C6,"NO, MAIN MENU",M)
+Menu("GRAPH IT?","YES",C6,"NO, GO BACK",ZR)
 Lbl C6
 A-5→U
 A+5→V
@@ -1551,7 +2746,7 @@ ANS "TOTAL SHADED AREA="+toString(abs(T))
 SHOW "AVERAGE VALUE=INTEGRAL/(B-A)"
 ANS "AVERAGE VALUE="+toString(I/(B-A))
 Pause
-Menu("GRAPH IT?","YES",C7,"NO, MAIN MENU",M)
+Menu("GRAPH IT?","YES",C7,"NO, GO BACK",ZR)
 Lbl C7
 min(A,B)-abs(B-A)/4→U
 max(A,B)+abs(B-A)/4→V
@@ -1609,7 +2804,7 @@ Then
 End
 ANS "EXACT     ="+toString(fnInt(Y₁,X,A,B))
 Pause
-Menu("DRAW RECTANGLES?","YES",C8,"NO, MAIN MENU",M)
+Menu("DRAW RECTANGLES?","YES",C8,"NO, GO BACK",ZR)
 Lbl C8
 min(A,B)-abs(B-A)/4→U
 max(A,B)+abs(B-A)/4→V
@@ -1665,7 +2860,7 @@ Else
   End
 End
 Pause
-Menu("GRAPH IT?","YES",C9,"NO, MAIN MENU",M)
+Menu("GRAPH IT?","YES",C9,"NO, GO BACK",ZR)
 Lbl C9
 G-5→U
 G+5→V
@@ -1775,7 +2970,7 @@ ANS "Y="+toString(M)+"X+"+toString(B)
 If U>0
 Then
   S/√(TU)→R
-  ANS "R="+toString(R)+"  R²="+toString(R²)
+  ANS "R="+toString(R)+"  R²="+toString(RR)
   If abs(R)≥.8
   Then
     SHOW "STRONG LINEAR RELATIONSHIP"
@@ -1937,7 +3132,7 @@ Goto O
 
 Lbl O4
 ClrHome
-Disp "MATHPRO V2.0","MADE BY {{FROM}}"," "
+Disp "MATHPRO V3.0","MADE BY {{FROM}}"," "
 Disp "SHOW WORK: "+sub("OFFON ",3ʟMPSET(1)+1,3)
 Disp "PACE: "+sub("PAGELINE",4ʟMPSET(2)-3,4)
 Disp "DECIMALS: "+sub("FLOATFIX 2FIX 4",5(ʟMPSET(3)/2)+1,5)
@@ -2000,7 +3195,7 @@ AxesOn
 10→Ymax
 1→Xscl
 1→Yscl
-Goto M
+Goto H
 
 # ================================================================ QUIT
 Lbl Q

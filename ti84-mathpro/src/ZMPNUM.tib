@@ -1,0 +1,21 @@
+# ZMPNUM - writes the number X as a fraction when it is one.
+# Output: Str9 ("2/3", "⁻5", or a decimal like "1.414213562")
+# Uses  : U,V,W, ʟMPW.  How: continued fractions.
+X→U
+{1,0,0,1}→ʟMPW
+0→V
+Repeat V>15 or ʟMPW(3)>999 or abs(X-ʟMPW(1)/ʟMPW(3))<1ᴇ⁻10(1+abs(X))
+  int(U)→W
+  {WʟMPW(1)+ʟMPW(2),ʟMPW(1),WʟMPW(3)+ʟMPW(4),ʟMPW(3)}→ʟMPW
+  If U≠W
+  1/(U-W)→U
+  V+1→V
+End
+If ʟMPW(3)≤999 and abs(X-ʟMPW(1)/ʟMPW(3))<1ᴇ⁻10(1+abs(X))
+Then
+  toString(ʟMPW(1))→Str9
+  If ʟMPW(3)≠1
+  Str9+"/"+toString(ʟMPW(3))→Str9
+Else
+  toString(X)→Str9
+End

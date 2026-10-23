@@ -1,0 +1,18 @@
+# ZMPREAL - keeps only the real numbers in ʟMPR and sorts them.
+# Output: ʟMPR = sorted real roots, W = how many (ʟMPR={0} if none).  Uses U.
+0→W
+For(U,1,dim(ʟMPR))
+  If imag(ʟMPR(U))=0
+  Then
+    W+1→W
+    real(ʟMPR(U))→ʟMPR(W)
+  End
+End
+If W
+Then
+  W→dim(ʟMPR)
+  real(ʟMPR)→ʟMPR
+  SortA(ʟMPR)
+Else
+  {0}→ʟMPR
+End

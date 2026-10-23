@@ -8,6 +8,7 @@ Source format:
     # comment         removed
     SHOW expr         expr→Str0  +  prgmZMPSHOW    (a step of work)
     ANS expr          "*"+expr→Str0 + prgmZMPSHOW  (an answer, always shown)
+    POLY list         list→ʟMPZ  +  prgmZMPPOLY    (polynomial to text in Str8)
     leading spaces    removed (indent however you like)
 
 The build also lints for TI-BASIC mistakes that only show up on the calculator:
@@ -20,15 +21,15 @@ import pathlib
 import re
 import sys
 
-from tivars import TIProgram
-from tivars.tokenizer import encode
+from tivars import TIGroup, TIProgram
+from tivars.tokenizer import decode, encode
 
 ROOT = pathlib.Path(__file__).parent
 SRC = ROOT / "src"
 DIST = ROOT / "dist"
 
 # Commands that need their trailing space to be recognized as a token
-BARE_COMMANDS = {"Pause", "SetUpEditor", "FnOff", "PlotsOff", "PlotsOn", "FnOn"}
+BARE_COMMANDS = {"Pause", "SetUpEditor", "FnOff", "PlotsOff", "PlotsOn", "FnOn", "AxesOn"}
 
 # tivars can't type π inside strings, so we swap it for a placeholder token
 # (ʳ, the radian mark, never used in this project) and patch the bytes after.
@@ -83,6 +84,11 @@ def preprocess(text, subs):
             continue
         if line in BARE_COMMANDS:
             line += " "
+        m = re.match(r"^POLY (.+)$", line)
+        if m:
+            lines.append((n, m.group(1) + "→ʟMPZ"))
+            lines.append((n, "prgmZMPPOLY"))
+            continue
         m = re.match(r"^(SHOW|ANS) (.+)$", line)
         if m:
             expr = m.group(2)
@@ -113,8 +119,8 @@ def lint(name, lines, errors, warnings):
             if re.search(r"(^|[(,=+*/^{:<>≤≥≠→])\s*-", text) or text.lstrip().startswith("-"):
                 errors.append(f"{where}: '-' used as a negative sign (use ⁻): {line}")
         for st in statements(line):
-            if prev_bare_if and st == "prgmZMPSHOW":
-                errors.append(f"{where}: SHOW/ANS right after a one-line If (needs Then/End)")
+            if prev_bare_if and st in ("prgmZMPSHOW", "prgmZMPPOLY"):
+                errors.append(f"{where}: SHOW/ANS/POLY right after a one-line If (needs Then/End)")
             opens = st == "Then" or st.startswith(("While ", "For(", "Repeat "))
             if st.startswith("If ") and "Then" not in st:
                 prev_bare_if = True
@@ -166,9 +172,38 @@ def lint(name, lines, errors, warnings):
             errors.append(f"{where}: Goto/Menu target {t} has no Lbl")
 
 
-def tokenize(lines):
-    text = "\n".join(line for _, line in lines).replace("π", PI_PLACEHOLDER)
-    data, _ = encode(text)
+# Tokens that are easy to create by accident outside strings, e.g. "R²" (the
+# regression variable) when you meant R squared.
+SUSPICIOUS = {"R²", "r", "n", "x̄", "ȳ", "Σx", "Σy", "Sx", "σx", "e", "a", "b", "c", "d"}
+
+
+def tokenize(name, lines, errors):
+    data = b""
+    for n, line in lines:
+        # A string stored into a Y= variable must hold real function tokens
+        # like abs(, so munch it maximally instead of letter by letter.
+        mode = "max" if re.search(r'"→Y[₁-₉]', line) else "smart"
+        try:
+            b, _ = encode(line.replace("π", PI_PLACEHOLDER), mode=mode)
+        except ValueError as e:
+            errors.append(f"{name}.tib:{n}: {e}")
+            continue
+        toks, _ = decode(b)
+        # the round trip must give back exactly what we wrote, otherwise the
+        # tokenizer merged something (like ">=" into "≥") behind our back
+        back = "".join(t.display for t in toks).replace("\\'", "'")
+        want = line.replace("π", PI_PLACEHOLDER).replace("[i]", "𝑖").replace("...", "…").replace("a+bi", "a+b𝑖")
+        if back != want:
+            errors.append(f"{name}.tib:{n}: tokenized differently than written:\n    wrote {want}\n    got   {back}")
+        in_str = False
+        for t in toks:
+            if t.display == '"':
+                in_str = not in_str
+            elif t.display == "→":
+                in_str = False
+            elif not in_str and (t.display in SUSPICIOUS or (len(t.display) == 1 and "a" <= t.display <= "z")):
+                errors.append(f"{name}.tib:{n}: became the token {t.display!r}, probably not intended: {line}")
+        data += (b"\x3f" if data else b"") + b
     out = bytearray()
     i = 0
     while i < len(data):
@@ -205,13 +240,26 @@ def main():
             print("ERROR:", e)
         sys.exit(1)
 
-    DIST.mkdir(exist_ok=True)
+    progs = []
     for name, lines in built.items():
         prog = TIProgram(name=name)
-        prog.data = tokenize(lines)
-        out = DIST / f"{name}.8xp"
+        prog.data = tokenize(name, lines, errors)
+        progs.append(prog)
+    if errors:
+        for e in errors:
+            print("ERROR:", e)
+        sys.exit(1)
+
+    DIST.mkdir(exist_ok=True)
+    for old in DIST.glob("*.8x?"):
+        old.unlink()
+    for prog in progs:
+        out = DIST / f"{prog.name}.8xp"
         prog.save(str(out))
-        print(f"built {out.relative_to(ROOT)}  ({len(prog.data)} bytes, {len(lines)} lines)")
+        print(f"built {out.relative_to(ROOT)}  ({len(prog.data)} bytes)")
+    group = TIGroup.group(progs, name="MATHPRO")
+    group.save(str(DIST / "MATHPRO.8xg"))
+    print(f"built dist/MATHPRO.8xg  (all {len(progs)} programs in one file)")
 
 
 if __name__ == "__main__":

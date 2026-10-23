@@ -1,0 +1,28 @@
+# ZMPDIV - divides polynomials: ʟMPP/ʟMPQ.
+# Output: ʟMPS = quotient, ʟMPP = remainder (leading zeros removed).
+# Uses  : I,Y,Z
+If dim(ʟMPP)<dim(ʟMPQ)
+Then
+  {0}→ʟMPS
+Else
+  dim(ʟMPP)-dim(ʟMPQ)+1→Y
+  seq(0,I,1,Y)→ʟMPS
+  For(Z,1,Y)
+    ʟMPP(Z)/ʟMPQ(1)→ʟMPS(Z)
+    For(I,1,dim(ʟMPQ))
+      ʟMPP(Z+I-1)-ʟMPS(Z)ʟMPQ(I)→ʟMPP(Z+I-1)
+    End
+    0→ʟMPP(Z)
+  End
+  If dim(ʟMPQ)=1
+  Then
+    {0}→ʟMPP
+  Else
+    seq(ʟMPP(I),I,Y+1,dim(ʟMPP))→ʟMPP
+  End
+End
+round(ʟMPP,9)→ʟMPP
+round(ʟMPS,9)→ʟMPS
+While dim(ʟMPP)>1 and ʟMPP(1)=0
+  seq(ʟMPP(I),I,2,dim(ʟMPP))→ʟMPP
+End

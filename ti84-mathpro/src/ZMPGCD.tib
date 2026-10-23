@@ -1,0 +1,12 @@
+# ZMPGCD - greatest common factor of two polynomials (Euclid's algorithm).
+# Input : ʟMPP, ʟMPQ (ʟMPQ not zero)
+# Output: ʟMPP = the GCF, whole numbers, positive leading coefficient
+# Uses  : I,Y,Z, ʟMPQ ʟMPS ʟMPT
+Repeat dim(ʟMPQ)=1 and ʟMPQ(1)=0
+  ʟMPQ/ʟMPQ(1)→ʟMPQ
+  prgmZMPDIV
+  ʟMPP→ʟMPT
+  ʟMPQ→ʟMPP
+  ʟMPT→ʟMPQ
+End
+prgmZMPINT

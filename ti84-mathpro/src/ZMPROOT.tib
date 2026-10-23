@@ -1,0 +1,119 @@
+# ZMPROOT - finds ALL roots (real and complex) of the polynomial ʟMPP.
+# Output: ʟMPR = the roots, repeated roots listed again (a+bi mode is left on)
+# How   : 1) X=0 roots  2) exact rational roots (rational root theorem)
+#         3) a leftover quadratic uses the quadratic formula
+#         4) anything bigger uses the Durand-Kerner method
+# Uses  : A B C D F G H I J K N P Q S Z, ʟMPT ʟMPU ʟMPI
+a+bi
+ʟMPP→ʟMPT
+seq(0,K,1,dim(ʟMPT)-1)→ʟMPR
+0→G
+While dim(ʟMPT)>1 and ʟMPT(dim(ʟMPT))=0
+  G+1→G
+  0→ʟMPR(G)
+  dim(ʟMPT)-1→dim(ʟMPT)
+End
+If max(abs(fPart(ʟMPT)))=0
+Then
+  1→F
+  While F and dim(ʟMPT)>3
+    0→F
+    dim(ʟMPT)-1→N
+    abs(ʟMPT(N+1))→C
+    abs(ʟMPT(1))→A
+    # divisors of C come in pairs I and C/I, so only go up to √(C)
+    For(I,1,√(C))
+      If not(F) and not(fPart(C/I))
+      Then
+        For(Z,0,1)
+          If Z
+          Then
+            C/I→D
+          Else
+            I→D
+          End
+          For(J,1,A)
+            If not(F) and not(fPart(A/J)) and gcd(D,J)=1
+            Then
+              For(S,⁻1,1,2)
+                If not(F)
+                Then
+                  0→H
+                  For(K,1,N+1)
+                    H+ʟMPT(K)(SD)^(N+1-K)J^(K-1)→H
+                  End
+                  If H=0
+                  Then
+                    SD→P
+                    J→Q
+                    1→F
+                  End
+                End
+              End
+            End
+          End
+        End
+      End
+    End
+    If F
+    Then
+      G+1→G
+      P/Q→ʟMPR(G)
+      N→dim(ʟMPU)
+      ʟMPT(1)/Q→ʟMPU(1)
+      For(K,2,N)
+        (ʟMPT(K)+PʟMPU(K-1))/Q→ʟMPU(K)
+      End
+      ʟMPU→ʟMPT
+    End
+  End
+End
+dim(ʟMPT)-1→N
+If N=1
+Then
+  G+1→G
+  ⁻ʟMPT(2)/ʟMPT(1)→ʟMPR(G)
+End
+If N=2
+Then
+  ʟMPT(1)→A
+  ʟMPT(2)→B
+  ʟMPT(3)→C
+  √(B²-4AC)→D
+  (⁻B+D)/(2A)→ʟMPR(G+1)
+  (⁻B-D)/(2A)→ʟMPR(G+2)
+  G+2→G
+End
+If N≥3
+Then
+  ʟMPT/ʟMPT(1)→ʟMPT
+  seq((.4+.9[i])^K,K,1,N)→ʟMPU
+  seq(K,K,1,N)→ʟMPI
+  1→D
+  0→J
+  While D>1ᴇ⁻11 and J<500
+    0→D
+    For(K,1,N)
+      ʟMPU(K)→Z
+      1→P
+      For(I,2,N+1)
+        PZ+ʟMPT(I)→P
+      End
+      P/prod(Z-ʟMPU+(K=ʟMPI))→H
+      Z-H→ʟMPU(K)
+      max(D,abs(H))→D
+    End
+    J+1→J
+  End
+  For(K,1,N)
+    G+1→G
+    ʟMPU(K)→ʟMPR(G)
+  End
+End
+# clean up: tiny imaginary parts are rounding noise
+For(K,1,G)
+  ʟMPR(K)→Z
+  If abs(imag(Z))<1ᴇ⁻8(1+abs(Z))
+  real(Z)→Z
+  round(real(Z),9)+round(imag(Z),9)[i]→ʟMPR(K)
+End

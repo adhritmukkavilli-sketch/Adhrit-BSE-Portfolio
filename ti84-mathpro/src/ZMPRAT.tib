@@ -1,0 +1,31 @@
+# ZMPRAT - simplifies the fraction ʟMPA/ʟMPB (whole-number polynomials).
+# Output: ʟMPG = the common factor that cancels (whole numbers)
+#         ʟMPA, ʟMPB = simplified top and bottom
+# Uses  : I,Y,Z, ʟMPP ʟMPQ ʟMPS ʟMPT
+ʟMPA→ʟMPP
+ʟMPB→ʟMPQ
+prgmZMPGCD
+ʟMPP→ʟMPG
+ʟMPA→ʟMPP
+ʟMPG→ʟMPQ
+prgmZMPDIV
+round(ʟMPS,6)→ʟMPA
+ʟMPB→ʟMPP
+ʟMPG→ʟMPQ
+prgmZMPDIV
+round(ʟMPS,6)→ʟMPB
+# cancel any common number and keep the bottom's leading coefficient positive
+0→Z
+For(I,1,dim(ʟMPA))
+  gcd(Z,abs(ʟMPA(I)))→Z
+End
+For(I,1,dim(ʟMPB))
+  gcd(Z,abs(ʟMPB(I)))→Z
+End
+If ʟMPB(1)<0
+⁻Z→Z
+If Z≠0
+Then
+  ʟMPA/Z→ʟMPA
+  ʟMPB/Z→ʟMPB
+End

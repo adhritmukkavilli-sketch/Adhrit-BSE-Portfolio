@@ -1,0 +1,8 @@
+# ZMPMUL - multiplies polynomials: ʟMPP*ʟMPQ→ʟMPP.  Uses U,V, ʟMPT.
+seq(0,U,2,dim(ʟMPP)+dim(ʟMPQ))→ʟMPT
+For(U,1,dim(ʟMPP))
+  For(V,1,dim(ʟMPQ))
+    ʟMPT(U+V-1)+ʟMPP(U)ʟMPQ(V)→ʟMPT(U+V-1)
+  End
+End
+ʟMPT→ʟMPP

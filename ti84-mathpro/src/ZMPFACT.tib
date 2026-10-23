@@ -1,0 +1,188 @@
+# ZMPFACT - factors the polynomial ʟMPP (whole-number coefficients), showing work.
+# Output: Str7 = factored form like "2X(X-1)(X+3)"
+#         T = 1 if it factored at all (0 means prime)
+# Uses  : A B C E F G H I J K N P Q R S, U V W, Str5 Str6 Str8, ʟMPP ʟMPR ʟMPZ
+""→Str7
+0→T
+# Step 1: greatest common factor
+abs(ʟMPP(1))→G
+For(I,2,dim(ʟMPP))
+  gcd(G,abs(ʟMPP(I)))→G
+End
+If ʟMPP(1)<0
+⁻G→G
+If G≠1
+Then
+  ʟMPP/G→ʟMPP
+  SHOW "PULL OUT THE GCF: "+toString(G)
+  If G=⁻1
+  Then
+    "-"→Str7
+  Else
+    toString(G)→Str7
+  End
+  1→T
+End
+# Step 2: pull out powers of X
+0→E
+While ʟMPP(dim(ʟMPP))=0
+  dim(ʟMPP)-1→dim(ʟMPP)
+  E+1→E
+End
+If E
+Then
+  Str7+"X"→Str7
+  If E>1
+  Str7+"^"+toString(E)→Str7
+  "X"→Str6
+  If E>1
+  "X^"+toString(E)→Str6
+  SHOW "PULL OUT "+Str6
+  1→T
+End
+# Step 3: rational root theorem until a quadratic is left
+If dim(ʟMPP)>3
+Then
+  SHOW "RATIONAL ROOT THEOREM:"
+  SHOW "TRY X=+/-(FACTOR OF LAST)"
+  SHOW "       /(FACTOR OF FIRST)"
+End
+1→F
+While F and dim(ʟMPP)>3
+  0→F
+  dim(ʟMPP)-1→N
+  abs(ʟMPP(N+1))→C
+  ʟMPP(1)→A
+  # divisors of C come in pairs I and C/I, so only go up to √(C)
+  For(I,1,√(C))
+    If not(F) and not(fPart(C/I))
+    Then
+      For(E,0,1)
+        If E
+        Then
+          C/I→D
+        Else
+          I→D
+        End
+        For(J,1,A)
+          If not(F) and not(fPart(A/J)) and gcd(D,J)=1
+          Then
+            For(S,⁻1,1,2)
+              If not(F)
+              Then
+                # J^N * P(SD/J), done in whole numbers so it is exact
+                0→H
+                For(K,1,N+1)
+                  H+ʟMPP(K)(SD)^(N+1-K)J^(K-1)→H
+                End
+                If H=0
+                Then
+                  SD→P
+                  J→Q
+                  1→F
+                End
+              End
+            End
+          End
+        End
+      End
+    End
+  End
+  If F
+  Then
+    # divide by (QX-P)
+    seq(0,K,1,N)→ʟMPR
+    ʟMPP(1)/Q→ʟMPR(1)
+    For(K,2,N)
+      (ʟMPP(K)+PʟMPR(K-1))/Q→ʟMPR(K)
+    End
+    toString(P)→Str5
+    If Q≠1
+    Str5+"/"+toString(Q)→Str5
+    POLY {Q,⁻P}
+    "("+Str8+")"→Str6
+    SHOW "X="+Str5+" MAKES IT 0,"
+    SHOW "SO "+Str6+" IS A FACTOR"
+    Str7+Str6→Str7
+    1→T
+    ʟMPR→ʟMPP
+    POLY ʟMPP
+    SHOW "DIVIDE IT OUT: "+Str8
+  End
+End
+# Step 4: what is left
+If dim(ʟMPP)=3
+Then
+  ʟMPP(1)→A
+  ʟMPP(2)→B
+  ʟMPP(3)→C
+  POLY ʟMPP
+  AC→E
+  SHOW "AC METHOD ON "+Str8+":"
+  SHOW "A*C="+toString(E)+". FIND 2 NUMBERS"
+  SHOW "THAT MULTIPLY TO "+toString(E)
+  SHOW "AND ADD TO "+toString(B)
+  0→F
+  For(I,1,√(abs(E)))
+    If not(F) and not(fPart(E/I))
+    Then
+      If I+E/I=B
+      Then
+        I→P
+        E/I→Q
+        1→F
+      End
+      If not(F) and ⁻I-E/I=B
+      Then
+        ⁻I→P
+        ⁻E/I→Q
+        1→F
+      End
+    End
+  End
+  If F
+  Then
+    SHOW "FOUND: "+toString(P)+" AND "+toString(Q)
+    POLY {A,P,0}
+    Str8→Str6
+    POLY {Q,C}
+    SHOW "SPLIT: "+Str6+sub("+-",1+(Q<0),1)+sub(Str8,1+(Q<0),length(Str8)-(Q<0))
+    gcd(A,abs(P))→G
+    A/G→R
+    P/G→S
+    Q/R→H
+    POLY {R,S}
+    Str8→Str6
+    POLY {G,0}
+    Str8+"("+Str6+")"+sub("+-",1+(H<0),1)+toString(abs(H))+"("+Str6+")"→Str5
+    SHOW "GROUP: "+Str5
+    POLY {G,H}
+    If G=R and H=S
+    Then
+      SHOW "PERFECT SQUARE!"
+      Str7+"("+Str6+")²"→Str7
+    Else
+      Str7+"("+Str8+")("+Str6+")"→Str7
+    End
+    1→T
+  Else
+    POLY ʟMPP
+    SHOW "NO PAIR WORKS, SO "+Str8
+    SHOW "DOESNT FACTOR ANY MORE"
+    Str7+"("+Str8+")"→Str7
+  End
+Else
+  If dim(ʟMPP)>1
+  Then
+    POLY ʟMPP
+    If dim(ʟMPP)>3
+    Then
+      SHOW "NO MORE RATIONAL ROOTS"
+    End
+    Str7+"("+Str8+")"→Str7
+  End
+End
+If not(length(Str7))
+"1"→Str7
+If Str7="-"
+"-1"→Str7

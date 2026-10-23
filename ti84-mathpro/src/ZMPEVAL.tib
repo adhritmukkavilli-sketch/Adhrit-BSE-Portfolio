@@ -1,0 +1,6 @@
+# ZMPEVAL - evaluates the polynomial ʟMPZ at X (Horner's method).
+# Output: W = value.  Uses U.
+0→W
+For(U,1,dim(ʟMPZ))
+  WX+ʟMPZ(U)→W
+End

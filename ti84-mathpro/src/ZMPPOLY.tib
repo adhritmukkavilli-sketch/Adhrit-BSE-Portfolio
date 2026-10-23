@@ -1,11 +1,11 @@
 # ZMPPOLY - turns a coefficient list into readable text.
-# Input : ʟMPP = coefficients, highest power first ({2,0,⁻3,1} = 2X³-3X+1)
+# Input : ʟMPZ = coefficients, highest power first ({2,0,⁻3,1} = 2X³-3X+1)
 # Output: Str8 = "2X³-3X+1"
 # Uses  : U,V,W as scratch
-dim(ʟMPP)→W
+dim(ʟMPZ)→W
 ""→Str8
 For(U,1,W)
-  ʟMPP(U)→V
+  ʟMPZ(U)→V
   If V≠0
   Then
     If V<0

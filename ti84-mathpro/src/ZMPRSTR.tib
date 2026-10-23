@@ -1,0 +1,22 @@
+# ZMPRSTR - lists the real X values that make the polynomial ʟMPP zero
+# (the "X can't be" restrictions for a denominator).
+# Output: Str3 like "2, ⁻1/3" ("" if none).  Leaves Real mode on.
+# Uses  : everything ZMPROOT uses, K O X, U V W
+""→Str3
+If dim(ʟMPP)>1
+Then
+  prgmZMPROOT
+  prgmZMPREAL
+  W→O
+  For(K,1,O)
+    If K=1 or abs(ʟMPR(K)-ʟMPR(max(1,K-1)))>1ᴇ⁻6
+    Then
+      ʟMPR(K)→X
+      prgmZMPNUM
+      If length(Str3)
+      Str3+", "→Str3
+      Str3+Str9→Str3
+    End
+  End
+End
+Real

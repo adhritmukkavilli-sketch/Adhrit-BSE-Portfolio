@@ -1,0 +1,6 @@
+# ZMPFQ - factors ʟMPP like ZMPFACT but without showing the steps.
+# Output: Str7
+ʟMPSET(1)→ʟMPSET(7)
+0→ʟMPSET(1)
+prgmZMPFACT
+ʟMPSET(7)→ʟMPSET(1)

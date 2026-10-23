@@ -3,7 +3,7 @@
 #         shown even when SHOW WORK is turned off.
 # Uses  : θ = lines on screen so far (callers reset it to 0 after ClrHome)
 #         ʟMPSET(1) show work on/off, ʟMPSET(2) pace 1=page 2=line,
-#         ʟMPSET(5) scratch flag
+#         ʟMPSET(5) answer flag, ʟMPSET(8) scratch
 sub(Str0,1,1)="*"→ʟMPSET(5)
 If ʟMPSET(5)
 sub(Str0,2,length(Str0)-1)→Str0
@@ -16,13 +16,30 @@ Then
       ClrHome
       0→θ
     End
-    # Wrap long lines at 25 characters
-    Disp sub(Str0,1,min(25,length(Str0)))
-    If length(Str0)>25
+    If length(Str0)≤25
     Then
-      sub(Str0,26,length(Str0)-25)→Str0
-    Else
+      Disp Str0
       ""→Str0
+    Else
+      # wrap at the last space that fits; continue on the next line
+      27→ʟMPSET(8)
+      Repeat ʟMPSET(8)<12 or sub(Str0,ʟMPSET(8),1)=" "
+        ʟMPSET(8)-1→ʟMPSET(8)
+      End
+      If ʟMPSET(8)<12
+      26→ʟMPSET(8)
+      Disp sub(Str0,1,ʟMPSET(8)-1)
+      If sub(Str0,ʟMPSET(8),1)=" "
+      Then
+        If ʟMPSET(8)=length(Str0)
+        Then
+          ""→Str0
+        Else
+          " "+sub(Str0,ʟMPSET(8)+1,length(Str0)-ʟMPSET(8))→Str0
+        End
+      Else
+        sub(Str0,ʟMPSET(8),length(Str0)-ʟMPSET(8)+1)→Str0
+      End
     End
     θ+1→θ
   End

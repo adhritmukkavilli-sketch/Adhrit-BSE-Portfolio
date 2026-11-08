@@ -1,33 +1,29 @@
 // ====================================================================
-//  PLASMA TEMPERATURE SCAN v2 — 1 x 1 INCH: 5 x 5 STOPS, 5.08 mm (0.2 in) APART   (Arduino Mega, Serial Monitor)
-//
-//  v2 = the original scan code + fixes for "it does not stop exactly at the points":
-//    * BACKLASH FIX: every stop is reached moving AWAY from home. When X has to go back toward home
-//      (rows 2 and 4 of the zig-zag), it goes BACKLASH_MM past the point and comes back.
-//      Before, rows 2 and 4 were shifted sideways by the play in the belt / nut, and the accuracy
-//      check could not see it (it only finds lost steps).  Measure the play with position_test T3.
-//    * RAMP: every move starts and ends slowly (RAMP_STEPS), so the motors are less likely to skip.
-//    * SWITCH FILTER: a switch must read "pressed" 5 times in a row, so noise from the motor wires
-//      can't home at the wrong spot or stop the scan.
-//    * Homing checks that the slow touch really reached the switch.
-//  Set X_STEPS_PER_MM / Y_STEPS_PER_MM from position_test T1 if they turn out wrong.
+//  PLASMA TEMPERATURE SCAN v3 — EXACTLY 1 x 1 INCH: 6 x 6 STOPS, 5.08 mm (0.2 in) APART   (Arduino Mega)
 //
 //  Serial Monitor: 9600 baud, "New Line". Type a letter + Enter:
 //    G = home, then scan      S = stop now      H = home only
 //
 //  What it does:
 //    1. Homes Y (up to its switch), then X (right to its switch). Home = 2 mm off both switches.
-//    2. Scans a 1 x 1 inch square that starts at home (the corner), like the original code:
-//       every stop is one 5.08 mm move away from the last, and it measures AFTER each move.
-//       Left/right: 5 stops at 5.08, 10.16, 15.24, 20.32, 25.40 mm  (5 moves x 5.08 = 1 inch)
-//       Up/down:    5 rows  at 5.08, 10.16, 15.24, 20.32, 25.40 mm  (5 moves x 5.08 = 1 inch)
-//       Zig-zag: row 1 left, row 2 right, ...  25 stops in all. The corner itself is not measured.
-//    3. At every point: 30 readings, 1 s apart, then the average.
-//    4. Goes home, touches both switches and prints how accurate the positions were.
-//    5. Prints a table of the averages (laid out like the stage) and a CSV block for Excel.
+//       Home is the top-right corner of the square, and it is the first stop.
+//    2. Covers the 1 x 1 inch square EXACTLY: 6 rows of 6 stops, at 0, 5.08, 10.16, 15.24, 20.32
+//       and 25.40 mm from home on each axis (5 gaps x 5.08 mm = 25.40 mm = 1 inch).
+//       The first and last stops sit on the edges of the square. 36 stops in all.
+//    3. Never goes backward into a stop: every row is scanned the same way (right to left) and the
+//       rows go top to bottom, so X only moves LEFT and Y only moves DOWN into a stop - the same way
+//       home is reached. The play (backlash) in the belt / lead screw can't shift any stop.
+//       The only backward move: between rows, X returns to 1 mm right of the row start (no readings
+//       there), Y moves down one row, then X moves 1 mm left into the first stop of the new row.
+//    4. At every stop: waits SETTLE_MS, then 30 readings 1 s apart, then the average.
+//    5. Goes home, touches both switches and prints how accurate the positions were (finds lost steps).
+//    6. Prints a table of the averages (laid out like the stage) and a CSV block for Excel.
 //
-//  Movement: one motor at a time (Y, then X), 1500 us per half step (the original code's speed),
-//  ramped at both ends, every stop reached moving away from home, both motors locked for the whole scan.
+//  Also: every move starts and ends slowly (ramp), and a limit switch must read "pressed" 5 times
+//  in a row, so noise from the motor wires can't stop the scan or home at the wrong spot.
+//
+//  The stops are only exactly 1 inch apart edge to edge if X_STEPS_PER_MM / Y_STEPS_PER_MM are
+//  right for the drivers' microstep settings. Check them once with position_test (T1).
 //
 //  Wiring:
 //    X driver: PUL+ 10, DIR+ 9, ENA+ 8      Y driver: PUL+ 7, DIR+ 4, ENA+ 5
@@ -53,25 +49,26 @@ const unsigned int STEP_US  = 1500;        // half step time (the original code'
 const unsigned int X_TOUCH_US = 1500;      // careful touch of the X switch (X at its normal speed: tested OK)
 const unsigned int Y_TOUCH_US = 3000;      // slow, careful touch of the Y switch
 const float BACKOFF_MM = 2.0;              // home = 2 mm off each switch
-const float BACKLASH_MM = 1.0;             // backlash fix: go this far past a point, then come back (0 = off).
-                                           //   Must be bigger than the play position_test T3 measures.
-                                           //   Near home the overshoot is cut so it never gets closer than
-                                           //   1 mm to a switch (home is only 2 mm from the switches).
-const int   RAMP_STEPS = 40;               // ramp: speed up / slow down over this many steps (0 = off)
-const unsigned int RAMP_START_US = 3000;   // ramp: half step time at the start and end of every move
+const int   RAMP_STEPS = 40;               // speed up / slow down over this many steps (0 = off)
+const unsigned int RAMP_START_US = 3000;   // half step time at the start and end of every move
 
 // ---- scan ----
-const int   ROWS = 5, COLS = 5;            // 5 stops each way, each one 5.08 mm further
-const float X_GAP_MM = 5.08;               // left/right gap between stops (0.2 inch)
-const float Y_GAP_MM = 5.08;               // up/down gap between rows (0.2 inch)
-const float CORNER_X = 0.0, CORNER_Y = 0.0; // corner of the 1-inch square = home
+const int   POINTS = 6;                    // stops per row AND number of rows (6 x 6 = 36 stops)
+const float SIDE_MM = 25.4;                // the square: 1 inch. First stop at 0, last stop at exactly 25.4 mm
+const float GAP_MM = SIDE_MM / (POINTS - 1);   // 5.08 mm (0.2 inch) between stops
+const float LEAD_IN_MM = 1.0;              // between rows, X goes this far past the row start and then
+                                           //   moves forward into the first stop. It must be bigger than
+                                           //   the play position_test T3 measures. Max 1.5 mm, because home
+                                           //   is only 2 mm from the switch (bigger values are cut to 1.5).
+const float LEAD_IN_SAFE_MM = (LEAD_IN_MM < BACKOFF_MM - 0.5) ? LEAD_IN_MM : BACKOFF_MM - 0.5;
 const int   READINGS = 30;
 const unsigned long READING_MS = 1000;     // 1 s apart
+const unsigned long SETTLE_MS = 1000;      // wait this long after arriving before the first reading
 
 long xPos = 0, yPos = 0;                   // position in steps from home (where the Arduino TOLD it to go)
 bool stopNow = false;
 unsigned long switchGlitches = 0;          // noise spikes on the switch wires that the filter ignored
-float avgC[ROWS][COLS], sdC[ROWS][COLS];
+float avgC[POINTS][POINTS], sdC[POINTS][POINTS];   // [row][column]
 
 // ====================================================================
 //  basics
@@ -112,7 +109,7 @@ float readTemp(float &volts) {
 
 // ====================================================================
 //  movement: one motor at a time
-//  steps > 0 = away from home (X left / Y down), steps < 0 = toward home.
+//  steps > 0 = forward, away from home (X left / Y down), steps < 0 = backward, toward home.
 //  untilSwitch = true: stop when the switch clicks (homing). Returns steps made, -1 = stopped / problem.
 // ====================================================================
 long move(bool isX, long steps, unsigned int us, bool untilSwitch) {
@@ -142,32 +139,14 @@ long move(bool isX, long steps, unsigned int us, bool untilSwitch) {
   return n;
 }
 
-// Move one axis to `target` (steps from home).
-// Backlash fix: a move TOWARD home goes BACKLASH_MM past the target and then comes back, so every
-// stop is reached moving AWAY from home - the same way home itself was reached (backing off the switch).
-// Then the play in the belt / nut is always on the same side and does not shift the point.
-bool moveTo(bool isX, long target) {
-  float spm = isX ? X_STEPS_PER_MM : Y_STEPS_PER_MM;
-  long pos = isX ? xPos : yPos;
-  long comp = lround(BACKLASH_MM * spm);
-  if (target < pos && comp > 0) {
-    long past = target - comp;
-    long lowest = -lround(BACKOFF_MM / 2 * spm);           // never closer than 1 mm to the switch
-    if (past < lowest) past = lowest;
-    if (past < pos) {
-      if (move(isX, past - pos, STEP_US, false) < 0) return false;
-      pos = past;
-    }
-  }
-  return move(isX, target - pos, STEP_US, false) >= 0;
+// move one axis straight to `mm` from home (X: + = left, Y: + = down)
+bool moveTo(bool isX, float mm) {
+  long target = lround(mm * (isX ? X_STEPS_PER_MM : Y_STEPS_PER_MM));
+  return move(isX, target - (isX ? xPos : yPos), STEP_US, false) >= 0;
 }
 
-// go to (x, y) in mm: Y first, then X
-bool goTo(float xmm, float ymm) {
-  if (!moveTo(false, lround(ymm * Y_STEPS_PER_MM))) return false;
-  if (!moveTo(true,  lround(xmm * X_STEPS_PER_MM))) return false;
-  return true;
-}
+// where stop number i (0 .. POINTS-1) is on either axis, in mm from home
+float stopMm(int i) { return i * GAP_MM; }
 
 // home one motor: off the switch if on it, drive to it, back off 3 mm, touch slowly, back off 2 mm = 0
 bool homeOne(bool isX) {
@@ -196,7 +175,7 @@ bool home() {
 }
 
 // from home: touch each switch slowly and compare with the step count.
-// This finds LOST STEPS. It cannot see backlash (that is what BACKLASH_MM fixes).
+// This finds LOST STEPS (a motor skipped, or a pulley / coupling slipped).
 void accuracyCheck() {
   Serial.println(F(">> Accuracy check (touching both switches - finds lost steps):"));
   for (int k = 0; k < 2; k++) {
@@ -206,7 +185,7 @@ void accuracyCheck() {
     bool hit = isX ? xSwitch() : ySwitch();
     float off = made / spm - BACKOFF_MM;
     Serial.print(isX ? F("   X off by ") : F("   Y off by "));
-    if (made >= 0 && hit) { Serial.print(off, 3); Serial.println(fabs(off) <= 0.25 ? F(" mm  OK") : F(" mm  (steps were lost)")); }
+    if (made >= 0 && hit) { Serial.print(off, 3); Serial.println(fabs(off) <= 0.10 ? F(" mm  OK") : F(" mm  (steps were lost)")); }
     else Serial.println(F("?? (switch not reached)"));
     move(isX, lround(BACKOFF_MM * spm), STEP_US, true);
     if (isX) xPos = 0; else yPos = 0;
@@ -220,64 +199,80 @@ void accuracyCheck() {
 // ====================================================================
 //  the scan
 // ====================================================================
+// readings at the stop the stage is at now (row r, column c). false = S was typed
+bool measure(int r, int c, int point) {
+  Serial.print(F("--- At point ")); Serial.print(point); Serial.print('/'); Serial.print(POINTS * POINTS);
+  Serial.print(F(" (row ")); Serial.print(r + 1); Serial.print(F(", col ")); Serial.print(c + 1); Serial.print(F("): X "));
+  Serial.print(xPos / X_STEPS_PER_MM, 2); Serial.print(F(" mm, Y ")); Serial.print(yPos / Y_STEPS_PER_MM, 2); Serial.println(F(" mm ---"));
+
+  float vals[READINGS], sum = 0;
+  unsigned long t0 = millis() + SETTLE_MS;               // first reading SETTLE_MS after arriving, then 1 s apart
+  for (int k = 0; k < READINGS; k++) {
+    if (!waitUntil(t0 + k * READING_MS)) return false;
+    float v, t = readTemp(v);
+    vals[k] = t; sum += t;
+    Serial.print(F("Point ")); Serial.print(point); Serial.print(F(" | Reading ")); Serial.print(k + 1); Serial.print('/'); Serial.print(READINGS);
+    Serial.print(F(" | C = ")); Serial.print(t, 2); Serial.print(F(" | F = ")); Serial.println(t * 1.8 + 32, 2);
+  }
+  float m = sum / READINGS, ss = 0;
+  for (int k = 0; k < READINGS; k++) ss += (vals[k] - m) * (vals[k] - m);
+  float sd = sqrt(ss / (READINGS - 1));                  // sample standard deviation
+  avgC[r][c] = m; sdC[r][c] = sd;
+  Serial.println(F("---------------------------"));
+  Serial.print(F("AVERAGE at point ")); Serial.print(point); Serial.print(F(" | C = ")); Serial.print(m, 2);
+  Serial.print(F(" | F = ")); Serial.print(m * 1.8 + 32, 2); Serial.print(F(" | SD = ")); Serial.println(sd, 2);
+  Serial.println(F("---------------------------"));
+  return true;
+}
+
+void stopScan() { motorsOff(); Serial.println(F(">> STOPPED. Type G to start again.")); }
+
 void scan() {
   stopNow = false;
   switchGlitches = 0;
   if (!home()) { Serial.println(F(">> Homing failed. Type G to try again.")); return; }
 
   Serial.println();
-  Serial.println(F(">>> Starting scan: 1 x 1 inch from home, 5 x 5 stops, 5.08 mm apart, 30 readings 1 s apart"));
-  Serial.print(F(">>> Backlash fix ")); Serial.print(BACKLASH_MM, 2); Serial.print(F(" mm, ramp ")); Serial.print(RAMP_STEPS); Serial.println(F(" steps"));
+  Serial.print(F(">>> Starting scan: exactly 1 x 1 inch, ")); Serial.print(POINTS); Serial.print(F(" x ")); Serial.print(POINTS);
+  Serial.print(F(" stops, ")); Serial.print(GAP_MM, 2); Serial.print(F(" mm apart, ")); Serial.print(READINGS); Serial.println(F(" readings 1 s apart"));
+  Serial.println(F(">>> Every row right to left, rows top to bottom: every stop is reached moving left / down."));
   int point = 0;
 
-  for (int r = 0; r < ROWS; r++) {
-    for (int j = 0; j < COLS; j++) {
-      int c = (r % 2 == 0) ? j : COLS - 1 - j;              // zig-zag
-      float x = CORNER_X + (c + 1) * X_GAP_MM, y = CORNER_Y + (r + 1) * Y_GAP_MM;
+  for (int r = 0; r < POINTS; r++) {
+    for (int c = 0; c < POINTS; c++) {
       point++;
-      if (point > 1) { Serial.print(F("Moving to point ")); Serial.print(point); Serial.println(F("...")); }
-      if (!goTo(x, y)) { motorsOff(); Serial.println(F(">> STOPPED. Type G to start again.")); return; }
-
-      Serial.print(F("--- At point ")); Serial.print(point); Serial.print('/'); Serial.print(ROWS * COLS); Serial.print(F(": X "));
-      Serial.print(xPos / X_STEPS_PER_MM, 2); Serial.print(F(" mm, Y ")); Serial.print(yPos / Y_STEPS_PER_MM, 2); Serial.println(F(" mm ---"));
-
-      float vals[READINGS], sum = 0;
-      unsigned long t0 = millis();                         // readings exactly 1 s apart (first one 1 s after arriving)
-      for (int k = 1; k <= READINGS; k++) {
-        if (!waitUntil(t0 + k * READING_MS)) { motorsOff(); Serial.println(F(">> STOPPED. Type G to start again.")); return; }
-        float v, t = readTemp(v);
-        vals[k - 1] = t; sum += t;
-        Serial.print(F("Point ")); Serial.print(point); Serial.print(F(" | Reading ")); Serial.print(k);
-        Serial.print(F("/30 | C = ")); Serial.print(t, 2); Serial.print(F(" | F = ")); Serial.println(t * 1.8 + 32, 2);
+      if (c > 0) {
+        // along the row: always forward (left)
+        Serial.print(F("Moving to point ")); Serial.print(point); Serial.println(F("..."));
+        if (!moveTo(true, stopMm(c))) { stopScan(); return; }
+      } else if (r > 0) {
+        // new row: X back past the row start (the only backward move, no readings there),
+        // Y down one row, then X forward (left) into the first stop
+        Serial.print(F("Moving to point ")); Serial.print(point); Serial.println(F(" (next row: X back to the start, Y down)..."));
+        if (!moveTo(true, -LEAD_IN_SAFE_MM) || !moveTo(false, stopMm(r)) || !moveTo(true, stopMm(0))) { stopScan(); return; }
       }
-      float m = sum / READINGS, ss = 0;
-      for (int k = 0; k < READINGS; k++) ss += (vals[k] - m) * (vals[k] - m);
-      float sd = sqrt(ss / (READINGS - 1));                 // sample standard deviation
-      avgC[r][c] = m; sdC[r][c] = sd;
-      Serial.println(F("---------------------------"));
-      Serial.print(F("AVERAGE at point ")); Serial.print(point); Serial.print(F(" | C = ")); Serial.print(m, 2);
-      Serial.print(F(" | F = ")); Serial.print(m * 1.8 + 32, 2); Serial.print(F(" | SD = ")); Serial.println(sd, 2);
-      Serial.println(F("---------------------------"));
+      // (point 1 is home itself: it was reached by backing off the switches, also forward)
+      if (!measure(r, c, point)) { stopScan(); return; }
     }
   }
 
   Serial.println(F(">>> Scan finished. Going home..."));
-  if (goTo(0, 0)) accuracyCheck();
+  if (moveTo(false, 0) && moveTo(true, 0)) accuracyCheck();
   motorsOff();
 
   Serial.println();
   Serial.println(F("=== AVERAGE TEMPERATURE (C), laid out like the stage (row 1 on top, home on the right) ==="));
-  for (int r = 0; r < ROWS; r++)
-    for (int c = COLS - 1; c >= 0; c--) { Serial.print(avgC[r][c], 2); Serial.print(c ? F("\t") : F("\n")); }
+  for (int r = 0; r < POINTS; r++)
+    for (int c = POINTS - 1; c >= 0; c--) { Serial.print(avgC[r][c], 2); Serial.print(c ? F("\t") : F("\n")); }
 
   Serial.println();
   Serial.println(F("=== CSV (copy into Excel) ==="));
   Serial.println(F("row,col,x_mm,y_mm,avg_C,avg_F,sd_C"));
-  for (int r = 0; r < ROWS; r++)
-    for (int c = 0; c < COLS; c++) {
+  for (int r = 0; r < POINTS; r++)
+    for (int c = 0; c < POINTS; c++) {
       Serial.print(r + 1); Serial.print(','); Serial.print(c + 1); Serial.print(',');
-      Serial.print(lround((CORNER_X + (c + 1) * X_GAP_MM) * X_STEPS_PER_MM) / X_STEPS_PER_MM, 2); Serial.print(',');
-      Serial.print(lround((CORNER_Y + (r + 1) * Y_GAP_MM) * Y_STEPS_PER_MM) / Y_STEPS_PER_MM, 2); Serial.print(',');
+      Serial.print(lround(stopMm(c) * X_STEPS_PER_MM) / X_STEPS_PER_MM, 2); Serial.print(',');
+      Serial.print(lround(stopMm(r) * Y_STEPS_PER_MM) / Y_STEPS_PER_MM, 2); Serial.print(',');
       Serial.print(avgC[r][c], 2); Serial.print(','); Serial.print(avgC[r][c] * 1.8 + 32, 2); Serial.print(',');
       Serial.println(sdC[r][c], 2);
     }
@@ -296,8 +291,10 @@ void setup() {
   delay(300);
   Serial.println();
   Serial.println(F("========================================"));
-  Serial.println(F("  PLASMA SCAN v2 1 x 1 INCH (5 x 5 stops, 5.08 mm apart) - READY"));
-  Serial.println(F("  25 stops, 30 readings each (~15 min)"));
+  Serial.println(F("  PLASMA SCAN v3 - EXACTLY 1 x 1 INCH - READY"));
+  Serial.print(F("  ")); Serial.print(POINTS * POINTS); Serial.print(F(" stops (")); Serial.print(POINTS); Serial.print(F(" x ")); Serial.print(POINTS);
+  Serial.print(F(", ")); Serial.print(GAP_MM, 2); Serial.print(F(" mm apart), ")); Serial.print(READINGS); Serial.print(F(" readings each, about "));
+  Serial.print(POINTS * POINTS * ((SETTLE_MS + (READINGS - 1) * READING_MS) / 1000.0 + 1.5) / 60.0, 0); Serial.println(F(" min"));
   Serial.println(F("  G = home + scan   S = stop   H = home only"));
   Serial.println(F("========================================"));
   float v; Serial.print(F("Temperature now: ")); Serial.print(readTemp(v), 2); Serial.println(F(" C"));

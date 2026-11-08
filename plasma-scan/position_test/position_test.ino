@@ -1,7 +1,7 @@
 // ====================================================================
 //  POSITION TEST for the plasma scan stage    (Arduino Mega, Serial Monitor 9600 baud, "New Line")
 //
-//  Same wiring, pins, directions, steps/mm, speed and homing as the scan code.
+//  Same wiring, pins, directions, steps/mm, speed, homing and scan path as plasma_scan_v3.
 //  It takes NO temperature readings. It only checks if the stage really stops where it is told.
 //
 //  The Arduino cannot see where the stage is. It only counts the step pulses it sends.
@@ -10,34 +10,32 @@
 //
 //    T1  STEPS PER MM   Does 1 inch of steps really move 1 inch?                  (calipers or ruler)
 //        Wrong if the driver's microstep DIP switches (or the pulley / lead screw) don't match
-//        X_STEPS_PER_MM / Y_STEPS_PER_MM. The error grows the further it goes.
+//        X_STEPS_PER_MM / Y_STEPS_PER_MM. Then the scan does NOT cover exactly 1 x 1 inch.
 //
-//    T2  LOST STEPS     Runs the scan path a few times (no waiting), then touches both switches.
+//    T2  LOST STEPS     Runs the scan path a few times (no readings), then touches both switches.
 //        If a motor skips (too fast / too little current / supply sagging) or a pulley or
 //        coupling set screw slips, the stage is no longer where the step count says.  (no tools)
 //
 //    T3  BACKLASH       Goes to the same spot from both sides, you measure both.  (calipers)
 //        Play in the belt / lead-screw nut / coupling: right after a motor reverses, the first
-//        few steps don't move the stage. The scan zig-zags, so X reverses every row, and rows
-//        2 and 4 end up shifted sideways from rows 1, 3 and 5.
-//        IMPORTANT: the switch check (T2, and the scan's accuracy check) CANNOT see backlash.
-//        It can say "OK" while the points are off.
+//        steps don't move the stage. The v3 scan never moves backward into a stop (between rows,
+//        X goes LEAD_IN_MM past the row start and comes forward), so the play does not matter as
+//        long as it is smaller than LEAD_IN_MM. T3 tells you if it is.
+//        (The switch check in T2 and at the end of the scan can NOT see backlash.)
 //
-//    T4  POINT TOUR     Visits the 25 scan points in the same order as the scan and stops at each,
-//        so you can mark where the sensor tip really is (graph paper fixed in front of the tip).
+//    T4  POINT TOUR     Visits the 36 scan stops in the same order and the same way as the scan,
+//        stopping at each one, so you can mark where the sensor tip really is.
 //
-//  Settings you can change while it runs, so you can try the fixes one at a time:
-//    K <mm>   backlash fix: every stop is reached moving AWAY from home (goes K mm past, comes back)
-//    A <n>    acceleration: start slow and speed up over n steps (0 = off, like the scan code)
-//    V <us>   speed: half step time in microseconds (1500 = scan code speed, bigger = slower)
-//  They start like the scan code (K 0, A 0, V 1500), so first you test the code as it is now.
+//  Settings you can change while it runs (they start like the v3 scan code):
+//    A <n>    ramp: start slow and speed up over n steps (40 = like the scan, 0 = off)
+//    V <us>   speed: half step time in microseconds (1500 = like the scan, bigger = slower)
 //
 //  Commands (type, then Enter):
 //    H          home both axes                   X <mm>  /  Y <mm>   go to a position (mm from home)
 //    W          where am I + switch states       S                   stop now, motors off
 //    T1 [mm]    steps/mm test (default 25.4)     T2 [runs]           lost steps test (default 3)
 //    T3         backlash test                    T4 [seconds]        point tour (no number = wait for Enter)
-//    K, A, V    settings (see above)             ?                   show this list
+//    A, V       settings (see above)             ?                   show this list
 //
 //  Wiring (same as the scan code):
 //    X driver: PUL+ 10, DIR+ 9, ENA+ 8      Y driver: PUL+ 7, DIR+ 4, ENA+ 5
@@ -61,17 +59,19 @@ const unsigned int HOME_US    = 1500;      // homing speed (same as the scan cod
 const unsigned int X_TOUCH_US = 1500;      // careful touch of the X switch
 const unsigned int Y_TOUCH_US = 3000;      // slow, careful touch of the Y switch
 const float BACKOFF_MM = 2.0;              // home = 2 mm off each switch
+const unsigned int RAMP_START_US = 3000;   // with the ramp on, every move starts and ends at this speed
 
 // ---- scan path (must match the scan code) ----
-const int   ROWS = 5, COLS = 5;
-const float X_GAP_MM = 5.08, Y_GAP_MM = 5.08;
+const int   POINTS = 6;                    // 6 x 6 stops
+const float SIDE_MM = 25.4;                // first stop at 0, last at 25.4 mm (1 inch)
+const float GAP_MM = SIDE_MM / (POINTS - 1);   // 5.08 mm
+const float LEAD_IN_MM = 1.0;              // between rows X goes this far past the row start, then forward
+const float LEAD_IN_SAFE_MM = (LEAD_IN_MM < BACKOFF_MM - 0.5) ? LEAD_IN_MM : BACKOFF_MM - 0.5;
 const float MAX_MM = 30.0;                 // X/Y commands and T1 never go further than this from home
 
-// ---- settings you can change with K, A, V (they start like the scan code) ----
-float backlashMm = 0.0;                    // K: 0 = off
-int   rampSteps  = 0;                      // A: 0 = off
+// ---- settings you can change with A and V (they start like the scan code) ----
+int   rampSteps = 40;                      // A: 0 = off
 unsigned int stepUs = 1500;                // V: half step time in us
-const unsigned int RAMP_START_US = 3000;   // with A on, every move starts and ends at this speed
 
 long xPos = 0, yPos = 0;                   // position in steps from home (what the Arduino THINKS)
 bool homed = false, stopNow = false;
@@ -138,8 +138,8 @@ float askNumber() {
 }
 
 // ====================================================================
-//  movement (same as the scan code, plus the optional ramp)
-//  steps > 0 = away from home (X left / Y down), steps < 0 = toward home.
+//  movement (same as the scan code)
+//  steps > 0 = forward, away from home (X left / Y down), steps < 0 = backward, toward home.
 //  untilSwitch = true: stop when the switch clicks. Returns steps made, -1 = stopped / problem.
 // ====================================================================
 long move(bool isX, long steps, unsigned int us, bool untilSwitch) {
@@ -169,32 +169,42 @@ long move(bool isX, long steps, unsigned int us, bool untilSwitch) {
   return n;
 }
 
-// Move one axis to `target` (steps from home).
-// Backlash fix (K > 0): a move TOWARD home goes K mm past the target and then comes back, so every
-// stop is reached moving AWAY from home - the same way home itself was reached. Then the play in
-// the belt / nut is always on the same side and does not shift the point.
-bool moveTo(bool isX, long target) {
-  long pos = isX ? xPos : yPos;
-  long comp = lround(backlashMm * spm(isX));
-  if (target < pos && comp > 0) {
-    long past = target - comp;
-    long lowest = -lround(BACKOFF_MM / 2 * spm(isX));     // never closer than 1 mm to the switch
-    if (past < lowest) past = lowest;
-    if (past < pos) {
-      if (move(isX, past - pos, stepUs, false) < 0) return false;
-      pos = past;
-    }
-  }
-  return move(isX, target - pos, stepUs, false) >= 0;
+// move one axis straight to `target` (steps from home)
+bool moveStraight(bool isX, long target) {
+  return move(isX, target - (isX ? xPos : yPos), stepUs, false) >= 0;
 }
 
-// go to (x, y) in mm from home: Y first, then X (same as the scan code)
+// Arrive at `target` moving FORWARD (away from home), the way the scan reaches every stop:
+// if the target is behind, go LEAD_IN past it first, then come forward.
+bool approach(bool isX, long target) {
+  long pos = isX ? xPos : yPos;
+  if (target < pos) {
+    long lead = lround(LEAD_IN_SAFE_MM * spm(isX));
+    long before = target - lead;
+    if (before < -lead) before = -lead;                   // never closer to the switch than the scan goes
+    if (before < pos && !moveStraight(isX, before)) return false;
+  }
+  return moveStraight(isX, target);
+}
+
+// go to (x, y) mm from home, arriving forward on both axes: Y first, then X
 bool goTo(float xmm, float ymm) {
-  return moveTo(false, lround(ymm * Y_STEPS_PER_MM)) && moveTo(true, lround(xmm * X_STEPS_PER_MM));
+  return approach(false, lround(ymm * Y_STEPS_PER_MM)) && approach(true, lround(xmm * X_STEPS_PER_MM));
+}
+
+// Move to scan stop p (0 .. POINTS*POINTS-1) exactly the way the scan code does
+bool goToStop(int p) {
+  int r = p / POINTS, c = p % POINTS;
+  if (p == 0) return goTo(0, 0);                         // the scan starts here, right after homing
+  if (c > 0) return moveStraight(true, lround(c * GAP_MM * X_STEPS_PER_MM));      // along the row: forward
+  // new row: X back past the row start (no readings), Y down one row, X forward into the first stop
+  return moveStraight(true, -lround(LEAD_IN_SAFE_MM * X_STEPS_PER_MM))
+      && moveStraight(false, lround(r * GAP_MM * Y_STEPS_PER_MM))
+      && moveStraight(true, 0);
 }
 
 // ====================================================================
-//  homing (same as the scan code, plus a check that the slow touch really reached the switch)
+//  homing (same as the scan code)
 // ====================================================================
 bool homeOne(bool isX) {
   float s = spm(isX);
@@ -258,17 +268,9 @@ bool switchCheck() {
   return true;
 }
 
-// x, y (mm) of scan point p (0..24), same order as the scan code (zig-zag)
-void scanPoint(int p, float &x, float &y) {
-  int r = p / COLS, j = p % COLS;
-  int c = (r % 2 == 0) ? j : COLS - 1 - j;
-  x = (c + 1) * X_GAP_MM;
-  y = (r + 1) * Y_GAP_MM;
-}
-
 void printSettings() {
   Serial.print(F("   settings: V ")); Serial.print(stepUs); Serial.print(F(" us, A ")); Serial.print(rampSteps);
-  Serial.print(F(" steps, K ")); Serial.print(backlashMm, 2); Serial.println(F(" mm"));
+  Serial.print(F(" steps (lead-in ")); Serial.print(LEAD_IN_SAFE_MM, 2); Serial.println(F(" mm)"));
 }
 
 void stopped() { motorsOff(); Serial.println(F(">> STOPPED. Motors off. Type H to home again.")); }
@@ -280,13 +282,12 @@ void testStepsPerMm(float dist) {
   if (!ensureHomed()) return;
   Serial.println(F("\n=== T1 STEPS PER MM ==="));
   Serial.println(F("Set your calipers between a fixed part of the frame and the moving carriage"));
-  Serial.println(F("(or tape a ruler on and mark the carriage). Both readings are taken after moving AWAY"));
-  Serial.println(F("from home, so backlash does not change the result."));
+  Serial.println(F("(or tape a ruler on and mark the carriage). Both readings are taken after moving forward,"));
+  Serial.println(F("so backlash does not change the result."));
   for (int k = 0; k < 2; k++) {
     bool isX = (k == 0);
     float s = spm(isX);
-    if (!goTo(0, 0)) { stopped(); return; }
-    if (!moveTo(isX, lround(1.0 * s))) { stopped(); return; }  // start point 1 mm out, reached moving away
+    if (!goTo(0, 0) || !approach(isX, lround(1.0 * s))) { stopped(); return; }   // start 1 mm out
     Serial.println(isX ? F(">> (X) Put your calipers on X now: this spot is ZERO. Then press Enter.")
                        : F(">> (Y) Put your calipers on Y now: this spot is ZERO. Then press Enter."));
     askNumber(); if (stopNow) { stopped(); return; }
@@ -314,7 +315,7 @@ void testStepsPerMm(float dist) {
 }
 
 // ====================================================================
-//  T2: lost steps. Runs the 25-point scan path `runs` times (0.2 s per stop), then the switch check.
+//  T2: lost steps. Runs the scan path `runs` times (0.2 s per stop), then the switch check.
 // ====================================================================
 void testLostSteps(int runs) {
   if (!ensureHomed()) return;
@@ -323,18 +324,17 @@ void testLostSteps(int runs) {
   unsigned long glitches0 = switchGlitches;
   for (int run = 1; run <= runs; run++) {
     Serial.print(F(">> Run ")); Serial.print(run); Serial.print('/'); Serial.print(runs); Serial.println(F(" of the scan path..."));
-    for (int p = 0; p < ROWS * COLS; p++) {
-      float x, y; scanPoint(p, x, y);
-      if (!goTo(x, y) || !pause(200)) { stopped(); return; }
-    }
+    for (int p = 0; p < POINTS * POINTS; p++)
+      if (!goToStop(p) || !pause(200)) { stopped(); return; }
   }
   if (!switchCheck()) { stopped(); return; }
   Serial.print(F("   switch noise spikes ignored: ")); Serial.println(switchGlitches - glitches0);
   if (switchGlitches > glitches0)
-    Serial.println(F("   !! The switch wires pick up noise. The scan code (no filter) can home at the wrong spot or stop mid-scan."));
+    Serial.println(F("   The switch wires pick up noise. The filter handles it, but keep them away from the motor wires."));
   Serial.println(F("What it means: OK on both = the motors don't skip at this speed. If you still see wrong"));
-  Serial.println(F("points, it is backlash (T3) or steps/mm (T1). LOST STEPS = slower speed (V 3000), ramp (A 40),"));
-  Serial.println(F("more driver current, tighten the pulley/coupling set screws, check the supply isn't current-limiting."));
+  Serial.println(F("points, it is steps/mm (T1) or backlash bigger than the lead-in (T3). LOST STEPS = slower"));
+  Serial.println(F("speed (V 3000), more driver current, tighten the pulley/coupling set screws, and check that"));
+  Serial.println(F("the supply isn't current-limiting."));
   Serial.println(F("=== T2 done. Home. ==="));
 }
 
@@ -352,41 +352,39 @@ void testBacklash() {
     bool isX = (k == 0);
     float s = spm(isX);
     long mid = lround(MID * s);
-    if (!goTo(0, 0) || !moveTo(isX, mid)) { stopped(); return; }       // arrive moving AWAY from home
-    Serial.println(isX ? F(">> (X) Reading A: X arrived moving AWAY from home. MEASURE the X position, type it, Enter:")
-                       : F(">> (Y) Reading A: Y arrived moving AWAY from home. MEASURE the Y position, type it, Enter:"));
+    if (!goTo(0, 0) || !approach(isX, mid)) { stopped(); return; }                // A: forward, like every scan stop
+    Serial.println(isX ? F(">> (X) Reading A: X arrived moving FORWARD (left), like the scan. MEASURE the X position, type it, Enter:")
+                       : F(">> (Y) Reading A: Y arrived moving FORWARD (down), like the scan. MEASURE the Y position, type it, Enter:"));
     float a = askNumber(); if (stopNow) { stopped(); return; }
-    if (!moveTo(isX, mid + lround(5 * s)) || !moveTo(isX, mid)) { stopped(); return; }   // arrive moving TOWARD home
-    Serial.println(isX ? F(">> (X) Reading B: X came back to the same spot moving TOWARD home. MEASURE again, type it, Enter:")
-                       : F(">> (Y) Reading B: Y came back to the same spot moving TOWARD home. MEASURE again, type it, Enter:"));
+    if (!moveStraight(isX, mid + lround(5 * s)) || !moveStraight(isX, mid)) { stopped(); return; }   // B: backward, on purpose
+    Serial.println(isX ? F(">> (X) Reading B: X came back to the same spot moving BACKWARD. MEASURE again, type it, Enter:")
+                       : F(">> (Y) Reading B: Y came back to the same spot moving BACKWARD. MEASURE again, type it, Enter:"));
     float b = askNumber(); if (stopNow) { stopped(); return; }
     if (!isnan(a) && !isnan(b)) {
       float play = fabs(a - b);
       Serial.print(isX ? F("   X backlash = ") : F("   Y backlash = ")); Serial.print(play, 2); Serial.print(F(" mm  "));
-      if (play < 0.06) Serial.println(F("(none you can measure)"));
-      else if (backlashMm > 0) Serial.println(F("(K is on but the readings still differ: make K bigger)"));
-      else { Serial.print(F("-> use K ")); Serial.print(max(0.5, play * 2), 1); Serial.println(F(" (twice the play, at least 0.5)")); }
-      if (play > 0.5) Serial.println(F("   That is a lot of play: tighten the belt and the pulley/coupling set screws too."));
+      if (!isX) Serial.println(F("(Y only moves down during the scan, so this does not shift any stop)"));
+      else if (play < 0.06) Serial.println(F("(none you can measure)"));
+      else if (play < LEAD_IN_SAFE_MM - 0.25) Serial.println(F("-> OK: smaller than the lead-in, so the scan is not affected"));
+      else Serial.println(F("-> TOO BIG for the lead-in: tighten the belt and the pulley/coupling set screws"));
     }
   }
   if (!goTo(0, 0)) { stopped(); return; }
-  Serial.println(F("With K 0 the two readings differ by the backlash. Type K 1 and run T3 again: they should match."));
   Serial.println(F("=== T3 done. Back home. ==="));
 }
 
 // ====================================================================
-//  T4: point tour. Visits the 25 scan points like the scan does.
+//  T4: point tour. Visits the scan stops exactly like the scan does.
 // ====================================================================
 void testTour(bool waitEnter, float seconds) {
   if (!ensureHomed()) return;
-  Serial.println(F("\n=== T4 POINT TOUR (same order as the scan) ==="));
+  Serial.println(F("\n=== T4 POINT TOUR (same path as the scan) ==="));
   printSettings();
   Serial.println(F("Fix a piece of graph paper right in front of the sensor tip and mark where the tip is at each stop."));
   Serial.println(F("Type S to stop."));
-  for (int p = 0; p < ROWS * COLS; p++) {
-    float x, y; scanPoint(p, x, y);
-    if (!goTo(x, y)) { stopped(); return; }
-    Serial.print(F("Point ")); Serial.print(p + 1); Serial.print(F("/25 (row ")); Serial.print(p / COLS + 1);
+  for (int p = 0; p < POINTS * POINTS; p++) {
+    if (!goToStop(p)) { stopped(); return; }
+    Serial.print(F("Point ")); Serial.print(p + 1); Serial.print('/'); Serial.print(POINTS * POINTS); Serial.print(F(" (row ")); Serial.print(p / POINTS + 1);
     Serial.print(F("): X ")); Serial.print(xPos / X_STEPS_PER_MM, 2); Serial.print(F(" mm, Y ")); Serial.print(yPos / Y_STEPS_PER_MM, 2);
     if (waitEnter) {
       Serial.println(F(" mm (commanded) - mark it, then press Enter"));
@@ -398,9 +396,11 @@ void testTour(bool waitEnter, float seconds) {
     if (stopNow) { stopped(); return; }
   }
   if (!switchCheck()) { stopped(); return; }
-  Serial.println(F("What to look for on the paper: a square grid with 5.08 mm gaps."));
-  Serial.println(F("  rows 2 and 4 shifted sideways from rows 1, 3, 5   -> backlash (T3, then K)"));
+  Serial.print(F("What to look for on the paper: ")); Serial.print(POINTS); Serial.print(F(" x ")); Serial.print(POINTS);
+  Serial.print(F(" dots in a square grid, ")); Serial.print(GAP_MM, 2); Serial.print(F(" mm apart, "));
+  Serial.print(SIDE_MM, 2); Serial.println(F(" mm edge to edge."));
   Serial.println(F("  grid too big or too small                         -> steps/mm (T1)"));
+  Serial.println(F("  rows shifted sideways from each other             -> backlash bigger than the lead-in (T3)"));
   Serial.println(F("  points drift more and more / switch check fails   -> lost steps (T2)"));
   Serial.println(F("=== T4 done. Home. ==="));
 }
@@ -417,11 +417,11 @@ void where() {
 }
 
 void help() {
-  Serial.println(F("  H = home            X <mm> / Y <mm> = go there (0 to 30 mm from home)"));
+  Serial.println(F("  H = home            X <mm> / Y <mm> = go there (0 to 30 mm from home, arrives moving forward)"));
   Serial.println(F("  W = where + switches                 S = stop, motors off"));
   Serial.println(F("  T1 [mm] = steps/mm test (needs calipers)     T2 [runs] = lost steps test (no tools)"));
   Serial.println(F("  T3 = backlash test (needs calipers)          T4 [s] = point tour (no number = Enter at each)"));
-  Serial.println(F("  K <mm> = backlash fix (0 = off)   A <steps> = ramp (0 = off)   V <us> = speed (1500 = scan)"));
+  Serial.println(F("  A <steps> = ramp (40 = scan, 0 = off)        V <us> = speed (1500 = scan, bigger = slower)"));
 }
 
 void runCommand() {
@@ -441,17 +441,12 @@ void runCommand() {
     case 'X': case 'Y':
       if (!hasNum || num < 0 || num > MAX_MM) { Serial.println(F("!! Give a distance from 0 to 30 mm, e.g. X 12.7")); break; }
       if (!ensureHomed()) break;
-      if (!moveTo(cmd == 'X', lround(num * spm(cmd == 'X')))) { stopped(); break; }
+      if (!approach(cmd == 'X', lround(num * spm(cmd == 'X')))) { stopped(); break; }
       where();
-      break;
-    case 'K':
-      if (hasNum) backlashMm = constrain(num, 0.0, 2.0);
-      Serial.println(backlashMm > 0 ? F(">> Backlash fix ON: every stop is reached moving away from home.") : F(">> Backlash fix OFF (like the scan code)."));
-      printSettings();
       break;
     case 'A':
       if (hasNum) rampSteps = constrain((int)num, 0, 400);
-      Serial.println(rampSteps > 0 ? F(">> Ramp ON: moves start and end slowly.") : F(">> Ramp OFF (like the scan code)."));
+      Serial.println(rampSteps > 0 ? F(">> Ramp ON: moves start and end slowly (like the scan).") : F(">> Ramp OFF."));
       printSettings();
       break;
     case 'V':
@@ -482,7 +477,7 @@ void setup() {
   delay(300);
   Serial.println();
   Serial.println(F("========================================"));
-  Serial.println(F("  POSITION TEST - plasma scan stage - READY"));
+  Serial.println(F("  POSITION TEST - plasma scan stage (v3 path) - READY"));
   Serial.println(F("  Start with T2 (no tools), then T4, T3, T1."));
   Serial.println(F("========================================"));
   help();

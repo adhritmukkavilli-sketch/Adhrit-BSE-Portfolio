@@ -13,6 +13,7 @@
 //                       period is shorter than fx microseconds (too fast)
 //   g=<p>               switch noise: chance that one read of an un-pressed switch reads HIGH
 //   x0=<mm> y0=<mm>     where the carriage starts (mm from each switch)
+//   stop=<s>            "the user types S" this many seconds after start
 //   q                   quiet: only print the per-stop table at the end
 // e.g.  ./sim bx=0.3 -- G          (the scan on a machine with 0.3 mm play in X)
 //       ./sim bx=0.3 sx=20.4 -- T2 T3 "K 1" T3 T1      (position_test; "the user" answers with caliper readings)
@@ -57,8 +58,14 @@ struct Axis {
   bool loseOnlyFast = false; unsigned int fastUs = 0;  // lose only when the step period is shorter than fastUs
   long steps = 0;
   uint64_t lastStepUs = 0;
+  int lastDir = 0;         // direction of the most recent step (+1 forward/away, -1 backward/toward home)
+  long backMoves = 0;      // backward moves started while the scan is running
+  long backAtLastStop = 0; // backMoves when the last stop was reached (ignores the trip home afterwards)
   void update() { if (c <= 0) sw = true; else if (c >= hyst) sw = false; }
   void step(int dir) {
+    extern bool scanPhase;
+    if (scanPhase && dir < 0 && lastDir >= 0) backMoves++;
+    lastDir = dir;
     steps++;
     unsigned int period = (unsigned int)(simUs - lastStepUs);
     lastStepUs = simUs;
@@ -71,7 +78,9 @@ struct Axis {
 };
 static Axis X{"X", 10, 9, 8, 2, HIGH, 20.0};
 static Axis Y{"Y", 7, 4, 5, 3, HIGH, 160.0};
-static double glitchProb = 0;  // chance that one read of an un-pressed switch reads HIGH (noise)
+bool scanPhase = false;   // true between "Starting scan"/"POINT TOUR" and the end of the path
+static double glitchProb = 0;
+static uint64_t stopAtUs = 0;  // "the user types S" at this time (0 = never)  // chance that one read of an un-pressed switch reads HIGH (noise)
 static long glitchesInjected = 0;
 
 static void pinMode(int, int) {}
@@ -112,7 +121,11 @@ static std::string outLine;
 static bool quiet = false;
 struct SerialMock {
   void begin(long) {}
-  int available() { pumpPending(); return (int)serialIn.size(); }
+  int available() {
+    if (stopAtUs && simUs >= stopAtUs) { serialIn.push_back('S'); serialIn.push_back('\n'); stopAtUs = 0; }
+    pumpPending();
+    return (int)serialIn.size();
+  }
   int read() { if (serialIn.empty()) return -1; char c = serialIn.front(); serialIn.pop_front(); return c; }
   void put(const std::string &s) {
     for (char ch : s) {
@@ -139,7 +152,8 @@ struct SerialMock {
 static double homeX = NAN, homeY = NAN;   // where the carriage REALLY was when the sketch called it home
 static double zeroRef[2] = {0, 0};
 static double worstX = 0, worstY = 0;
-static int pointsSeen = 0;
+static int pointsSeen = 0, arrivedBackward = 0;
+static double minCX = 1e9, maxCX = -1e9, minCY = 1e9, maxCY = -1e9;
 static std::vector<std::string> pointLog;
 
 static double realMm(const Axis &a) { return a.c / a.spmTrue; }
@@ -153,14 +167,20 @@ static void reportPoint(const std::string &label) {
   double ex = rx - cmdX, ey = ry - cmdY;
   worstX = (worstX > std::fabs(ex) ? worstX : std::fabs(ex)); worstY = (worstY > std::fabs(ey) ? worstY : std::fabs(ey));
   pointsSeen++;
-  char b[200];
-  snprintf(b, sizeof b, "%-12s commanded X %6.2f Y %6.2f | real X %6.2f Y %6.2f | error X %+5.2f Y %+5.2f mm",
-           label.c_str(), cmdX, cmdY, rx, ry, ex, ey);
+  minCX = std::fmin(minCX, cmdX); maxCX = std::fmax(maxCX, cmdX); minCY = std::fmin(minCY, cmdY); maxCY = std::fmax(maxCY, cmdY);
+  bool back = X.lastDir < 0 || Y.lastDir < 0;
+  X.backAtLastStop = X.backMoves; Y.backAtLastStop = Y.backMoves;
+  if (back) arrivedBackward++;
+  char b[220];
+  snprintf(b, sizeof b, "%-12s commanded X %6.2f Y %6.2f | real X %6.2f Y %6.2f | error X %+5.2f Y %+5.2f mm | arrived %s",
+           label.c_str(), cmdX, cmdY, rx, ry, ex, ey, back ? "BACKWARD" : "forward");
   pointLog.push_back(b);
   if (!quiet) printf("      [sim] %s\n", b);
 }
 
 void onOutputLine(const std::string &s) {
+  if (s.find(">>> Starting scan") != std::string::npos || s.find("POINT TOUR") != std::string::npos) scanPhase = true;
+  if (s.find(">>> Scan finished") != std::string::npos || s.find(">> Switch check") != std::string::npos) scanPhase = false;
   if (s.find(">> Home (X 0, Y 0)") != std::string::npos || s.find("Homed. ") != std::string::npos) {
     homeX = realMm(X); homeY = realMm(Y);
   }
@@ -198,6 +218,7 @@ int main(int argc, char **argv) {
     else if (!a.rfind("fx=", 0)) { X.loseOnlyFast = true; X.fastUs = (unsigned)val("fx="); }
     else if (!a.rfind("g=", 0)) glitchProb = val("g=");
     else if (!a.rfind("x0=", 0)) x0 = val("x0=");
+    else if (!a.rfind("stop=", 0)) stopAtUs = (uint64_t)(val("stop=") * 1e6);
     else if (!a.rfind("y0=", 0)) y0 = val("y0=");
     else if (a == "q") quiet = true;
   }
@@ -223,6 +244,9 @@ int main(int argc, char **argv) {
   }
   printf("\n[sim] SUMMARY: %d stops checked, worst real-vs-commanded error X %.2f mm, Y %.2f mm, switch glitches injected %ld, sim time %.0f s\n",
          pointsSeen, worstX, worstY, glitchesInjected, simUs / 1e6);
+  if (pointsSeen)
+    printf("[sim] PATH: stops span X %.2f..%.2f mm, Y %.2f..%.2f mm | stops reached moving backward: %d | backward moves up to the last stop: X %ld, Y %ld\n",
+           minCX, maxCX, minCY, maxCY, arrivedBackward, X.backAtLastStop, Y.backAtLastStop);
   if (quiet) for (auto &l : pointLog) printf("  %s\n", l.c_str());
   return 0;
 }

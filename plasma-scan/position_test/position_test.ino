@@ -23,7 +23,7 @@
 //        long as it is smaller than LEAD_IN_MM. T3 tells you if it is.
 //        (The switch check in T2 and at the end of the scan can NOT see backlash.)
 //
-//    T4  POINT TOUR     Visits the 36 scan stops in the same order and the same way as the scan,
+//    T4  POINT TOUR     Visits the 25 scan stops in the same order and the same way as the scan,
 //        stopping at each one, so you can mark where the sensor tip really is.
 //
 //  Settings you can change while it runs (they start like the v3 scan code):
@@ -62,7 +62,7 @@ const float BACKOFF_MM = 2.0;              // home = 2 mm off each switch
 const unsigned int RAMP_START_US = 3000;   // with the ramp on, every move starts and ends at this speed
 
 // ---- scan path (must match the scan code) ----
-const int   POINTS = 6;                    // 6 x 6 stops
+const int   POINTS = 5;                    // 5 x 5 stops
 const float SIDE_MM = 25.4;                // first stop at 0, last at 25.4 mm (1 inch)
 const float GAP_MM = SIDE_MM / (POINTS - 1);   // 5.08 mm
 const float LEAD_IN_MM = 1.0;              // between rows X goes this far past the row start, then forward

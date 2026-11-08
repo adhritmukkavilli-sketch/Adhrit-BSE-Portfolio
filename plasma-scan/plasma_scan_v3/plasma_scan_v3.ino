@@ -1,5 +1,5 @@
 // ====================================================================
-//  PLASMA TEMPERATURE SCAN v3 — EXACTLY 1 x 1 INCH: 6 x 6 STOPS, 5.08 mm (0.2 in) APART   (Arduino Mega)
+//  PLASMA TEMPERATURE SCAN v3 — EXACTLY 1 x 1 INCH: 5 x 5 STOPS, 6.35 mm (0.25 in) APART   (Arduino Mega)
 //
 //  Serial Monitor: 9600 baud, "New Line". Type a letter + Enter:
 //    G = home, then scan      S = stop now      H = home only
@@ -7,9 +7,9 @@
 //  What it does:
 //    1. Homes Y (up to its switch), then X (right to its switch). Home = 2 mm off both switches.
 //       Home is the top-right corner of the square, and it is the first stop.
-//    2. Covers the 1 x 1 inch square EXACTLY: 6 rows of 6 stops, at 0, 5.08, 10.16, 15.24, 20.32
-//       and 25.40 mm from home on each axis (5 gaps x 5.08 mm = 25.40 mm = 1 inch).
-//       The first and last stops sit on the edges of the square. 36 stops in all.
+//    2. Covers the 1 x 1 inch square EXACTLY: 5 rows of 5 stops, at 0, 6.35, 12.70, 19.05
+//       and 25.40 mm from home on each axis (4 gaps x 6.35 mm = 25.40 mm = 1 inch).
+//       The first and last stops sit on the edges of the square. 25 stops in all.
 //    3. Never goes backward into a stop: every row is scanned the same way (right to left) and the
 //       rows go top to bottom, so X only moves LEFT and Y only moves DOWN into a stop - the same way
 //       home is reached. The play (backlash) in the belt / lead screw can't shift any stop.
@@ -53,9 +53,9 @@ const int   RAMP_STEPS = 40;               // speed up / slow down over this man
 const unsigned int RAMP_START_US = 3000;   // half step time at the start and end of every move
 
 // ---- scan ----
-const int   POINTS = 6;                    // stops per row AND number of rows (6 x 6 = 36 stops)
+const int   POINTS = 5;                    // stops per row AND number of rows (5 x 5 = 25 stops)
 const float SIDE_MM = 25.4;                // the square: 1 inch. First stop at 0, last stop at exactly 25.4 mm
-const float GAP_MM = SIDE_MM / (POINTS - 1);   // 5.08 mm (0.2 inch) between stops
+const float GAP_MM = SIDE_MM / (POINTS - 1);   // 6.35 mm (0.25 inch) between stops
 const float LEAD_IN_MM = 1.0;              // between rows, X goes this far past the row start and then
                                            //   moves forward into the first stop. It must be bigger than
                                            //   the play position_test T3 measures. Max 1.5 mm, because home

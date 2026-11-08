@@ -27,6 +27,7 @@
 #include <deque>
 #include <vector>
 #include <random>
+#include <algorithm>
 
 typedef uint8_t byte;
 using std::isnan;
@@ -60,7 +61,8 @@ struct Axis {
   uint64_t lastStepUs = 0;
   int lastDir = 0;         // direction of the most recent step (+1 forward/away, -1 backward/toward home)
   long backMoves = 0;      // backward moves started while the scan is running
-  long backAtLastStop = 0; // backMoves when the last stop was reached (ignores the trip home afterwards)
+  long backAtLastStop = 0;
+  std::vector<unsigned int> periods;  // time between step pulses during the scan (for the smoothness check) // backMoves when the last stop was reached (ignores the trip home afterwards)
   void update() { if (c <= 0) sw = true; else if (c >= hyst) sw = false; }
   void step(int dir) {
     extern bool scanPhase;
@@ -69,6 +71,7 @@ struct Axis {
     steps++;
     unsigned int period = (unsigned int)(simUs - lastStepUs);
     lastStepUs = simUs;
+    if (scanPhase) { periods.push_back(period); }
     bool lose = loseEvery && steps % loseEvery == 0 && (!loseOnlyFast || period < fastUs);
     if (lose && dir > 0) return;   // skips only while moving away (e.g. fighting friction one way)
     m += dir;
@@ -102,7 +105,7 @@ static int digitalRead(int pin) {
 }
 static int analogRead(int) { return 256 + (int)(rng() % 3); }  // ~ room temperature
 static unsigned long millis() { return (unsigned long)(simUs / 1000); }
-static unsigned long micros() { return (unsigned long)simUs; }
+static unsigned long micros() { simUs += 4; return (unsigned long)simUs; }   // like the Mega: 4 us resolution, time passes while polling
 static void timeGuard() { if (simUs > 6ULL * 3600 * 1000000) { printf("\n[sim] TIMEOUT: sketch stuck (waiting for input?)\n"); exit(2); } }
 static void delay(unsigned long ms) { simUs += ms * 1000ULL; timeGuard(); }
 static void delayMicroseconds(unsigned int us) { simUs += us; timeGuard(); }
@@ -244,6 +247,31 @@ int main(int argc, char **argv) {
   }
   printf("\n[sim] SUMMARY: %d stops checked, worst real-vs-commanded error X %.2f mm, Y %.2f mm, switch glitches injected %ld, sim time %.0f s\n",
          pointsSeen, worstX, worstY, glitchesInjected, simUs / 1e6);
+  // smoothness: split each axis' step times into moves (a gap > 20 ms = new move), then check
+  // every move is mirror-symmetric (speed-up == slow-down) and steady at full speed
+  for (Axis *a : {&X, &Y}) {
+    std::vector<std::vector<unsigned int>> moves;
+    for (unsigned int p : a->periods) { if (p > 20000 || moves.empty()) moves.push_back({}); else moves.back().push_back(p); }
+    int asym = 0; unsigned int worstAsym = 0, cruiseMin = ~0u, cruiseMax = 0; size_t nMoves = 0;
+    std::vector<size_t> lengths;
+    for (auto &m : moves) {
+      if (m.size() < 10) continue;
+      nMoves++; lengths.push_back(m.size() + 1);
+      // m[k] = time from pulse k to pulse k+1 (= 2 x half step k). Step k's mirror is step n-1-k = m[size-k]
+      for (size_t k = 1; k < m.size(); k++) {
+        unsigned int d = m[k] > m[m.size() - k] ? m[k] - m[m.size() - k] : m[m.size() - k] - m[k];
+        if (d > worstAsym) worstAsym = d;
+        if (d > 8) asym++;
+      }
+      for (size_t k = 60; k + 60 < m.size(); k++) { if (m[k] < cruiseMin) cruiseMin = m[k]; if (m[k] > cruiseMax) cruiseMax = m[k]; }
+    }
+    std::sort(lengths.begin(), lengths.end());
+    printf("[sim] SMOOTH %s: %zu moves | worst speed-up vs slow-down mismatch %u us | full-speed step period %u..%u us | move lengths (steps):",
+           a->name, nMoves, worstAsym, cruiseMin == ~0u ? 0 : cruiseMin, cruiseMax);
+    for (size_t k = 0; k < lengths.size(); k++) if (k == 0 || lengths[k] != lengths[k-1]) {
+      size_t c = std::count(lengths.begin(), lengths.end(), lengths[k]); printf(" %zux%zu", c, lengths[k]); }
+    printf("\n");
+  }
   if (pointsSeen)
     printf("[sim] PATH: stops span X %.2f..%.2f mm, Y %.2f..%.2f mm | stops reached moving backward: %d | backward moves up to the last stop: X %ld, Y %ld\n",
            minCX, maxCX, minCY, maxCY, arrivedBackward, X.backAtLastStop, Y.backAtLastStop);

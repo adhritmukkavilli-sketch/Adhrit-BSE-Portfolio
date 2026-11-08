@@ -149,6 +149,10 @@ long move(bool isX, long steps, unsigned int us, bool untilSwitch) {
   long n = labs(steps);
   digitalWrite(isX ? xDirPin : yDirPin, isX ? (away ? X_LEFT : X_RIGHT) : (away ? Y_DOWN : Y_UP));
   delay(5);
+  // Every pulse is timed from micros(), so switch checks and maths never stretch a step: the speed
+  // is perfectly steady (no stutter), and every move of the same length is timed exactly the same.
+  float v0 = 500000.0 / RAMP_START_US, v1 = 500000.0 / us;   // start speed and full speed, steps per second
+  unsigned long t = micros();
   for (long i = 0; i < n; i++) {
     if (!away && pressed(isX)) {
       if (untilSwitch) return i;
@@ -157,15 +161,18 @@ long move(bool isX, long steps, unsigned int us, bool untilSwitch) {
       return -1;
     }
     if (i % 100 == 0) { checkStop(); if (stopNow) return -1; }
-    unsigned int d = us;
-    if (rampSteps > 0 && RAMP_START_US > us) {             // ramp: slow at both ends of the move
-      long edge = min(i, n - 1 - i);
-      if (edge < rampSteps) d = RAMP_START_US - (unsigned long)(RAMP_START_US - us) * edge / rampSteps;
+    unsigned long half = us;                              // half step time for THIS step
+    if (rampSteps > 0 && RAMP_START_US > us) {                 // smooth ramp: constant acceleration
+      long edge = min(i, n - 1 - i);                      // steps from the nearer end -> start and stop are mirror images
+      if (edge < rampSteps) half = 500000.0 / sqrt(v0 * v0 + (v1 * v1 - v0 * v0) * edge / rampSteps);
     }
-    digitalWrite(stepPin, HIGH); delayMicroseconds(d);
-    digitalWrite(stepPin, LOW);  delayMicroseconds(d);
+    while ((long)(micros() - t) < 0) { }                 // wait for the exact start of this step
+    digitalWrite(stepPin, HIGH); t += half;
+    while ((long)(micros() - t) < 0) { }
+    digitalWrite(stepPin, LOW);  t += half;
     if (isX) xPos += away ? 1 : -1; else yPos += away ? 1 : -1;
   }
+  while ((long)(micros() - t) < 0) { }                   // finish the last step
   return n;
 }
 
